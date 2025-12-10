@@ -52,6 +52,7 @@ use crate::{
         document_box::delete,
         document_box::search,
         // File routes
+        file::upload,
         file::create_presigned,
         file::get_presigned,
         file::get,

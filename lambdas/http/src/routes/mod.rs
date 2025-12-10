@@ -90,6 +90,7 @@ pub fn folder_router() -> Router {
 /// Routes for /box/:scope/file/
 pub fn file_router() -> Router {
     Router::new()
+        .route("/", post(file::upload))
         .nest(
             "/presigned",
             Router::new()

@@ -1,8 +1,7 @@
 use crate::{
     extensions::max_file_size::MaxFileSizeBytes, middleware::api_key::ApiKeyLayer, routes::router,
-    service::LambdaService,
 };
-use axum::{Extension, Router, extract::DefaultBodyLimit};
+use axum::{Extension, Router};
 use docbox_core::{
     aws::{SqsClient, aws_config},
     events::{EventPublisherFactory, sqs::SqsEventPublisherFactory},
@@ -17,9 +16,9 @@ use docbox_search::{SearchIndexFactory, SearchIndexFactoryConfig};
 use docbox_secrets::{SecretManager, SecretsManagerConfig};
 use docbox_storage::{StorageLayerFactory, StorageLayerFactoryConfig};
 use docbox_web_scraper::{WebsiteMetaService, WebsiteMetaServiceConfig};
-use lambda_http::{Error, run, tracing};
+use lambda_http::{Error, run_with_streaming_response, tracing};
 use std::sync::Arc;
-use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
+use tower_http::trace::TraceLayer;
 
 pub mod docs;
 mod error;
@@ -27,7 +26,6 @@ mod extensions;
 mod middleware;
 mod models;
 mod routes;
-mod service;
 
 /// The server version extracted from the Cargo.toml
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -46,11 +44,11 @@ async fn main() -> Result<(), Error> {
         // TODO: Handle
         .unwrap();
 
-    run(app).await
+    run_with_streaming_response(app).await
 }
 
 // TODO: Needs a db_cache.close_all() cleanup logic when the program exits
-async fn app() -> Result<LambdaService<Router>, Box<dyn std::error::Error>> {
+async fn app() -> Result<Router, Box<dyn std::error::Error>> {
     let max_file_size_bytes = match std::env::var("DOCBOX_MAX_FILE_SIZE_BYTES") {
         Ok(value) => value.parse::<i32>()?,
         // Default max file size in bytes (100MB)
@@ -124,8 +122,6 @@ async fn app() -> Result<LambdaService<Router>, Box<dyn std::error::Error>> {
         .layer(Extension(processing))
         .layer(Extension(tenant_cache))
         .layer(Extension(MaxFileSizeBytes(max_file_size_bytes)))
-        .layer(DefaultBodyLimit::disable())
-        .layer(RequestBodyLimitLayer::new(max_file_size_bytes as usize))
         .layer(TraceLayer::new_for_http());
 
     if let Some(api_key) = api_key {
@@ -140,5 +136,5 @@ async fn app() -> Result<LambdaService<Router>, Box<dyn std::error::Error>> {
     #[cfg(debug_assertions)]
     let app = app.layer(tower_http::cors::CorsLayer::very_permissive());
 
-    Ok(LambdaService { inner: app })
+    Ok(app)
 }

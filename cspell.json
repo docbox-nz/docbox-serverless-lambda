@@ -6,6 +6,7 @@
     "utoipa",
     "thiserror",
     "chrono",
-    "dotenvy"
+    "dotenvy",
+    "dotenv"
   ]
 }

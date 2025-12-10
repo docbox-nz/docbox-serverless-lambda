@@ -107,12 +107,15 @@ pub struct HttpErrorResponse {
 pub enum HttpCommonError {
     #[error("internal server error")]
     ServerError,
+    #[error("unsupported endpoint")]
+    Unsupported,
 }
 
 impl HttpError for HttpCommonError {
     fn status(&self) -> axum::http::StatusCode {
         match self {
             HttpCommonError::ServerError => StatusCode::INTERNAL_SERVER_ERROR,
+            HttpCommonError::Unsupported => StatusCode::NOT_IMPLEMENTED,
         }
     }
 }

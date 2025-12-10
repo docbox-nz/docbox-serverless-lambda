@@ -44,6 +44,28 @@ use std::{str::FromStr, time::Duration};
 
 pub const FILE_TAG: &str = "File";
 
+/// Upload file
+///
+/// This endpoint is not available in docbox serverless, for serverless
+/// environments use presigned file uploads instead
+#[utoipa::path(
+    post,
+    operation_id = "file_upload",
+    tag = FILE_TAG,
+    path = "/box/{scope}/file",
+    responses(
+        (status = 501, description = "unsupported endpoint", body = HttpErrorResponse)
+    ),
+    params(
+        ("scope" = DocumentBoxScope, Path, description = "Scope to create the file within"),
+        TenantParams,
+        UserParams
+    )
+)]
+pub async fn upload() -> HttpResult<()> {
+    Err(HttpCommonError::Unsupported.into())
+}
+
 /// Create presigned file upload
 ///
 /// Creates a new "presigned" upload, where the file is uploaded
