@@ -22,7 +22,7 @@ pub struct Dependencies {
     pub storage: StorageLayerFactory,
 }
 
-async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error>> {
+async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error + Send + Sync>> {
     let aws_config = aws_config().await;
 
     // Create secrets manager
@@ -48,11 +48,7 @@ async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error>> {
 pub(crate) async fn outer_function_handler(
     event: LambdaEvent<EventBridgeEvent>,
 ) -> Result<(), Error> {
-    let dependencies = DEPENDENCIES
-        .get_or_try_init(dependencies)
-        .await
-        // TODO: Map error
-        .unwrap();
+    let dependencies = DEPENDENCIES.get_or_try_init(dependencies).await?;
     function_handler(event, dependencies).await
 }
 

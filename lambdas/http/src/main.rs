@@ -39,16 +39,13 @@ async fn main() -> Result<(), Error> {
 
     tracing::init_default_subscriber();
 
-    let app = app()
-        .await
-        // TODO: Handle
-        .unwrap();
+    let app = app().await?;
 
     run_with_streaming_response(app).await
 }
 
 // TODO: Needs a db_cache.close_all() cleanup logic when the program exits
-async fn app() -> Result<Router, Box<dyn std::error::Error>> {
+async fn app() -> Result<Router, Box<dyn std::error::Error + Send + Sync>> {
     let max_file_size_bytes = match std::env::var("DOCBOX_MAX_FILE_SIZE_BYTES") {
         Ok(value) => value.parse::<i32>()?,
         // Default max file size in bytes (100MB)

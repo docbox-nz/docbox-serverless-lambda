@@ -31,7 +31,7 @@ pub struct Dependencies {
     pub processing: ProcessingLayer,
 }
 
-async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error>> {
+async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error + Send + Sync>> {
     // Create the converter
     let converter_config = OfficeConverterConfig::from_env();
     let converter = OfficeConverter::from_config(converter_config)?;
@@ -87,11 +87,7 @@ async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error>> {
 }
 
 pub(crate) async fn outer_function_handler(event: LambdaEvent<S3Event>) -> Result<(), Error> {
-    let dependencies = DEPENDENCIES
-        .get_or_try_init(dependencies)
-        .await
-        // TODO: Map error type
-        .unwrap();
+    let dependencies = DEPENDENCIES.get_or_try_init(dependencies).await?;
     function_handler(event, dependencies).await
 }
 
@@ -99,21 +95,24 @@ async fn function_handler(
     event: LambdaEvent<S3Event>,
     dependencies: &Dependencies,
 ) -> Result<(), Error> {
-    // Extract some useful information from the request
-    let payload = event.payload;
-    tracing::info!("Payload: {:?}", payload);
+    let (bucket_name, object_key) = match get_object_parts(&event.payload) {
+        Some(value) => value,
+        None => return Ok(()),
+    };
 
-    // TODO: Replace unwraps with errors
-    let record = payload.records.first().unwrap();
+    handle_file_uploaded(dependencies, bucket_name, object_key).await;
+    Ok(())
+}
+
+fn get_object_parts(payload: &S3Event) -> Option<(String, String)> {
+    let record = payload.records.first()?;
     let bucket = &record.s3.bucket;
     let object = &record.s3.object;
 
-    let bucket_name = bucket.name.as_ref().unwrap().clone();
-    let object_key = object.key.as_ref().unwrap().clone();
+    let bucket_name = bucket.name.as_ref()?.clone();
+    let object_key = object.key.as_ref()?.clone();
 
-    handle_file_uploaded(dependencies, bucket_name, object_key).await;
-
-    Ok(())
+    Some((bucket_name, object_key))
 }
 
 /// Handle file upload notifications
