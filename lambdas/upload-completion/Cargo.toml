@@ -1,7 +1,7 @@
 [package]
 name = "upload-completion"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 aws-config.workspace = true
@@ -21,3 +21,6 @@ thiserror.workspace = true
 
 # URL encoding to decode object key names
 urlencoding = "=2.1.3"
+
+tracing.workspace = true
+dotenvy.workspace = true

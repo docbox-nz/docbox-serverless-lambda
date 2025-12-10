@@ -1,20 +1,28 @@
-use std::sync::Arc;
-
-use aws_config::SdkConfig;
 use aws_lambda_events::event::eventbridge::EventBridgeEvent;
-use docbox_database::{DatabasePoolCache, DatabasePoolCacheConfig};
-use docbox_storage::StorageLayerFactory;
-use lambda_runtime::{tracing, Error, LambdaEvent};
+use chrono::Utc;
+use docbox_core::aws::aws_config;
+use docbox_database::{
+    DatabasePoolCache, DatabasePoolCacheConfig, DbPool, DbResult,
+    models::{
+        presigned_upload_task::{PresignedTaskStatus, PresignedUploadTask},
+        tenant::Tenant,
+    },
+};
+use docbox_secrets::{SecretManager, SecretsManagerConfig};
+use docbox_storage::{StorageLayerFactory, StorageLayerFactoryConfig, TenantStorageLayer};
+use lambda_runtime::{Error, LambdaEvent, tracing};
+use std::sync::Arc;
+use thiserror::Error;
 use tokio::sync::OnceCell;
 
-static DEPENDENCIES: OnceCell<Dependencies> = OnceCell::new();
+static DEPENDENCIES: OnceCell<Dependencies> = OnceCell::const_new();
 
 pub struct Dependencies {
-    pub db_cache: Arc<DatabasePoolCache>,
+    pub db: Arc<DatabasePoolCache>,
     pub storage: StorageLayerFactory,
 }
 
-async fn dependencies() -> Result<Dependencies, Box<dyn Error>> {
+async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error>> {
     let aws_config = aws_config().await;
 
     // Create secrets manager
@@ -22,10 +30,10 @@ async fn dependencies() -> Result<Dependencies, Box<dyn Error>> {
     let secrets = SecretManager::from_config(&aws_config, secrets_config);
 
     // Load database credentials
-    let mut db_pool_config = DatabasePoolCacheConfig::from_env()?;
+    let db_pool_config = DatabasePoolCacheConfig::from_env()?;
 
     // Setup database cache / connector
-    let db_cache = Arc::new(DatabasePoolCache::from_config(
+    let db = Arc::new(DatabasePoolCache::from_config(
         db_pool_config,
         secrets.clone(),
     ));
@@ -34,18 +42,22 @@ async fn dependencies() -> Result<Dependencies, Box<dyn Error>> {
     let storage_factory_config = StorageLayerFactoryConfig::from_env()?;
     let storage = StorageLayerFactory::from_config(&aws_config, storage_factory_config);
 
-    Ok(Dependencies { db_cache, storage })
+    Ok(Dependencies { db, storage })
 }
 
 pub(crate) async fn outer_function_handler(
     event: LambdaEvent<EventBridgeEvent>,
 ) -> Result<(), Error> {
-    let dependencies = DEPENDENCIES.get_or_try_init(dependencies).await?;
+    let dependencies = DEPENDENCIES
+        .get_or_try_init(dependencies)
+        .await
+        // TODO: Map error
+        .unwrap();
     function_handler(event, dependencies).await
 }
 
 async fn function_handler(
-    event: LambdaEvent<EventBridgeEvent>,
+    _event: LambdaEvent<EventBridgeEvent>,
     dependencies: &Dependencies,
 ) -> Result<(), Error> {
     // Run the presigned purge
@@ -57,11 +69,20 @@ async fn function_handler(
     Ok(())
 }
 
+#[derive(Debug, Error)]
+pub enum PurgeExpiredPresignedError {
+    #[error("failed to connect to database")]
+    ConnectDatabase,
+
+    #[error("failed to query available tenants")]
+    QueryTenants,
+}
+
 /// Purge the presigned tasks for all tenants
 #[tracing::instrument(skip_all)]
 async fn purge_expired_presigned_tasks(
-    db_cache: &'static Arc<DatabasePoolCache>,
-    storage: &'static StorageLayerFactory,
+    db_cache: &Arc<DatabasePoolCache>,
+    storage: &StorageLayerFactory,
 ) -> Result<(), PurgeExpiredPresignedError> {
     let db = db_cache.get_root_pool().await.map_err(|error| {
         tracing::error!(?error, "failed to connect to root database");

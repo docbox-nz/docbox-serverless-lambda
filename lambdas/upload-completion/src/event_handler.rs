@@ -1,10 +1,27 @@
+use std::sync::Arc;
+
+use ::tracing::Instrument;
 use aws_lambda_events::event::s3::S3Event;
-use docbox_core::events::EventPublisherFactory;
-use docbox_processing::ProcessingLayer;
-use lambda_runtime::{tracing, Error, LambdaEvent};
+use docbox_core::{
+    aws::{SqsClient, aws_config},
+    events::{EventPublisherFactory, sqs::SqsEventPublisherFactory},
+    files::upload_file_presigned::{CompletePresigned, safe_complete_presigned},
+};
+use docbox_database::{
+    DatabasePoolCache, DatabasePoolCacheConfig,
+    models::{folder::Folder, presigned_upload_task::PresignedUploadTask, tenant::Tenant},
+};
+use docbox_processing::{
+    ProcessingLayer, ProcessingLayerConfig,
+    office::{OfficeConverter, OfficeConverterConfig, OfficeProcessingLayer},
+};
+use docbox_search::{SearchIndexFactory, SearchIndexFactoryConfig};
+use docbox_secrets::{SecretManager, SecretsManagerConfig};
+use docbox_storage::{StorageLayerFactory, StorageLayerFactoryConfig};
+use lambda_runtime::{Error, LambdaEvent, tracing};
 use tokio::sync::OnceCell;
 
-static DEPENDENCIES: OnceCell<Dependencies> = OnceCell::new();
+static DEPENDENCIES: OnceCell<Dependencies> = OnceCell::const_new();
 
 pub struct Dependencies {
     pub db_cache: Arc<DatabasePoolCache>,
@@ -14,7 +31,7 @@ pub struct Dependencies {
     pub processing: ProcessingLayer,
 }
 
-async fn dependencies() -> Result<Dependencies, Box<dyn Error>> {
+async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error>> {
     // Create the converter
     let converter_config = OfficeConverterConfig::from_env();
     let converter = OfficeConverter::from_config(converter_config)?;
@@ -35,7 +52,7 @@ async fn dependencies() -> Result<Dependencies, Box<dyn Error>> {
     let secrets = SecretManager::from_config(&aws_config, secrets_config);
 
     // Load database credentials
-    let mut db_pool_config = DatabasePoolCacheConfig::from_env()?;
+    let db_pool_config = DatabasePoolCacheConfig::from_env()?;
 
     // Setup database cache / connector
     let db_cache = Arc::new(DatabasePoolCache::from_config(
@@ -69,10 +86,12 @@ async fn dependencies() -> Result<Dependencies, Box<dyn Error>> {
     })
 }
 
-pub(crate) async fn outer_function_handler(
-    event: LambdaEvent<EventBridgeEvent>,
-) -> Result<(), Error> {
-    let dependencies = DEPENDENCIES.get_or_try_init(dependencies).await?;
+pub(crate) async fn outer_function_handler(event: LambdaEvent<S3Event>) -> Result<(), Error> {
+    let dependencies = DEPENDENCIES
+        .get_or_try_init(dependencies)
+        .await
+        // TODO: Map error type
+        .unwrap();
     function_handler(event, dependencies).await
 }
 
@@ -86,11 +105,11 @@ async fn function_handler(
 
     // TODO: Replace unwraps with errors
     let record = payload.records.first().unwrap();
-    let bucket = record.s3.bucket;
-    let object = record.s3.object;
+    let bucket = &record.s3.bucket;
+    let object = &record.s3.object;
 
-    let bucket_name = bucket.name.unwrap();
-    let object_key = object.key.unwrap();
+    let bucket_name = bucket.name.as_ref().unwrap().clone();
+    let object_key = object.key.as_ref().unwrap().clone();
 
     handle_file_uploaded(dependencies, bucket_name, object_key).await;
 
@@ -197,8 +216,15 @@ pub async fn handle_file_uploaded_tenant(
     let events = data.events.create_event_publisher(&tenant);
 
     // Create task future that performs the file upload
-    if let Err(error) =
-        safe_complete_presigned(db, search, storage, events, data.processing, complete).await
+    if let Err(error) = safe_complete_presigned(
+        db,
+        search,
+        storage,
+        events,
+        data.processing.clone(),
+        complete,
+    )
+    .await
     {
         tracing::error!(?error, "failed to complete presigned file upload");
     }

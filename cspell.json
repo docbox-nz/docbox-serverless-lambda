@@ -2,6 +2,10 @@
   "words": [
     "docbox",
     "eventbridge",
-    "urlencoding"
+    "urlencoding",
+    "utoipa",
+    "thiserror",
+    "chrono",
+    "dotenvy"
   ]
 }
