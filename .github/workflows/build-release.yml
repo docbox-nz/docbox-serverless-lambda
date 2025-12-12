@@ -46,7 +46,7 @@ jobs:
               run: |
                   cp target/lambda/docbox-http-lambda/bootstrap.zip docbox-http-lambda-amd64.zip
                   cp target/lambda/docbox-presigned-cleanup-lambda/bootstrap.zip docbox-presigned-cleanup-lambda-amd64.zip
-                  cp target/lambda/docbox-upload-completion-lambda/bootstrap.zip docbox-upload-completion-lambda.zip
+                  cp target/lambda/docbox-upload-completion-lambda/bootstrap.zip docbox-upload-completion-lambda-amd64.zip
               shell: bash
 
             # Build the docker layers
@@ -54,20 +54,6 @@ jobs:
               run: |
                   chmod +x ./layers/make-poppler-layer-amd64.sh
                   bash ./layers/make-poppler-layer-amd64.sh
-              shell: bash
-
-            # Merge processing lambda with poppler layer
-            # (Required for processing pdf files)
-            - name: Merge processing layers
-              run: |
-                  mkdir /tmp/processing-lambda
-                  unzip docbox-upload-completion-lambda.zip -d /tmp/processing-lambda
-                  unzip poppler-lambda-layer.zip -d /tmp/processing-lambda
-                  (
-                    cd /tmp/processing-lambda
-                    zip -r /tmp/docbox-upload-completion-lambda-amd64.zip .
-                  )
-                  mv /tmp/docbox-upload-completion-lambda-amd64.zip .
               shell: bash
 
             # Upload the built artifacts
@@ -88,6 +74,12 @@ jobs:
               with:
                   name: docbox-upload-completion-lambda-amd64.zip
                   path: docbox-upload-completion-lambda-amd64.zip
+
+            - name: Upload poppler-lambda-layer-amd64.zip
+              uses: actions/upload-artifact@v4
+              with:
+                  name: poppler-lambda-layer-amd64.zip
+                  path: poppler-lambda-layer-amd64.zip
 
     build-arm64:
         name: Build ARM64
@@ -121,7 +113,7 @@ jobs:
               run: |
                   cp target/lambda/docbox-http-lambda/bootstrap.zip docbox-http-lambda-arm64.zip
                   cp target/lambda/docbox-presigned-cleanup-lambda/bootstrap.zip docbox-presigned-cleanup-lambda-arm64.zip
-                  cp target/lambda/docbox-upload-completion-lambda/bootstrap.zip docbox-upload-completion-lambda.zip
+                  cp target/lambda/docbox-upload-completion-lambda/bootstrap.zip docbox-upload-completion-lambda-arm64.zip
               shell: bash
 
             - name: Set up QEMU
@@ -135,20 +127,6 @@ jobs:
               run: |
                   chmod +x ./layers/make-poppler-layer-arm64.sh
                   bash ./layers/make-poppler-layer-arm64.sh
-              shell: bash
-
-            # Merge processing lambda with poppler layer
-            # (Required for processing pdf files)
-            - name: Merge processing layers
-              run: |
-                  mkdir /tmp/processing-lambda
-                  unzip docbox-upload-completion-lambda.zip -d /tmp/processing-lambda
-                  unzip poppler-lambda-layer.zip -d /tmp/processing-lambda
-                  (
-                    cd /tmp/processing-lambda
-                    zip -r /tmp/docbox-upload-completion-lambda-arm64.zip .
-                  )
-                  mv /tmp/docbox-upload-completion-lambda-arm64.zip .
               shell: bash
 
             # Upload the built artifacts
@@ -169,6 +147,12 @@ jobs:
               with:
                   name: docbox-upload-completion-lambda-arm64.zip
                   path: docbox-upload-completion-lambda-arm64.zip
+
+            - name: Upload poppler-lambda-layer-arm64.zip
+              uses: actions/upload-artifact@v4
+              with:
+                  name: poppler-lambda-layer-arm64.zip
+                  path: poppler-lambda-layer-arm64.zip
 
     release:
         name: Create Release
