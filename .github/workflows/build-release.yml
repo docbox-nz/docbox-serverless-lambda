@@ -51,7 +51,10 @@ jobs:
 
             # Build the docker layers
             - name: Build poppler layer
-              run: ./layers/make-poppler-layer-amd64.sh
+              run: |
+                  chmod +x ./layers/make-poppler-layer-amd64.sh
+                  bash ./layers/make-poppler-layer-amd64.sh
+              shell: bash
 
             # Merge processing lambda with poppler layer
             # (Required for processing pdf files)
@@ -120,7 +123,10 @@ jobs:
 
             # Build the docker layers
             - name: Build poppler layer
-              run: ./layers/make-poppler-layer-arm64sh
+              run: |
+                  chmod +x ./layers/make-poppler-layer-arm64.sh
+                  bash ./layers/make-poppler-layer-arm64.sh
+              shell: bash
 
             # Merge processing lambda with poppler layer
             # (Required for processing pdf files)
