@@ -1,5 +1,6 @@
 # Docker for building the layer for poppler support in AWS lambda
-FROM public.ecr.aws/lambda/provided:al2023 AS builder
+ARG BASE_IMAGE=public.ecr.aws/lambda/provided:al2023
+FROM ${BASE_IMAGE} AS builder
 
 # Install required dependencies
 RUN dnf -y update && \
