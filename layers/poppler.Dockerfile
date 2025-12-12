@@ -3,14 +3,14 @@ FROM public.ecr.aws/lambda/provided:al2023 AS builder
 
 # Install required dependencies
 RUN dnf -y update && \
-    dnf -y install poppler poppler-utils poppler-data && \
+    dnf -y install poppler poppler-utils poppler-data zip && \
     dnf clean all
 
 # Copy bundling helper script
 COPY ./copy-dep.sh /tmp/copy-dep.sh
 
 # Create output bundle directory
-RUN mkdir -p /bundle/opt/bin /bundle/opt/lib /bundle/opt/fonts /bundle/opt/fontconfig /bundle/opt/poppler-data
+RUN mkdir -p /bundle/opt/bin /bundle/opt/lib /bundle/opt/etc /bundle/opt/etc/fonts /bundle/opt/share /bundle/opt/share/poppler-data
 
 # Copy required cli tools and their dependencies
 RUN chmod +x /tmp/copy-dep.sh && \
@@ -30,4 +30,4 @@ RUN cp -r /usr/share/fonts/* /bundle/opt/fonts/ && \
 RUN chmod -R 755 /bundle/opt
 
 # Zip up the bundle as the layer
-RUN zip /bundle /poppler-lambda-layer.zip
+RUN zip -r /poppler-lambda-layer.zip /bundle
