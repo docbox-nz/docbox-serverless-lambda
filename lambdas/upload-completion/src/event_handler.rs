@@ -1,24 +1,23 @@
-use std::sync::Arc;
-
 use ::tracing::Instrument;
 use aws_lambda_events::event::s3::S3Event;
 use docbox_core::{
     aws::{SqsClient, aws_config},
+    database::{
+        DatabasePoolCache, DatabasePoolCacheConfig,
+        models::{folder::Folder, presigned_upload_task::PresignedUploadTask, tenant::Tenant},
+    },
     events::{EventPublisherFactory, sqs::SqsEventPublisherFactory},
     files::upload_file_presigned::{CompletePresigned, safe_complete_presigned},
+    processing::{
+        ProcessingLayer, ProcessingLayerConfig,
+        office::{OfficeConverter, OfficeConverterConfig, OfficeProcessingLayer},
+    },
+    search::{SearchIndexFactory, SearchIndexFactoryConfig},
+    secrets::{SecretManager, SecretsManagerConfig},
+    storage::{StorageLayerFactory, StorageLayerFactoryConfig},
 };
-use docbox_database::{
-    DatabasePoolCache, DatabasePoolCacheConfig,
-    models::{folder::Folder, presigned_upload_task::PresignedUploadTask, tenant::Tenant},
-};
-use docbox_processing::{
-    ProcessingLayer, ProcessingLayerConfig,
-    office::{OfficeConverter, OfficeConverterConfig, OfficeProcessingLayer},
-};
-use docbox_search::{SearchIndexFactory, SearchIndexFactoryConfig};
-use docbox_secrets::{SecretManager, SecretsManagerConfig};
-use docbox_storage::{StorageLayerFactory, StorageLayerFactoryConfig};
 use lambda_runtime::{Error, LambdaEvent, tracing};
+use std::sync::Arc;
 use tokio::sync::OnceCell;
 
 static DEPENDENCIES: OnceCell<Dependencies> = OnceCell::const_new();

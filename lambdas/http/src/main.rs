@@ -1,29 +1,25 @@
-use crate::{
-    extensions::max_file_size::MaxFileSizeBytes, middleware::api_key::ApiKeyLayer, routes::router,
-};
 use axum::{Extension, Router};
-use docbox_core::{
-    aws::{SqsClient, aws_config},
-    events::{EventPublisherFactory, sqs::SqsEventPublisherFactory},
-    links::resolve_website::{ResolveWebsiteConfig, ResolveWebsiteService},
-    tenant::tenant_cache::TenantCache,
+use docbox_http::{
+    core::{
+        aws::{SqsClient, aws_config},
+        database::{DatabasePoolCache, DatabasePoolCacheConfig},
+        events::{EventPublisherFactory, sqs::SqsEventPublisherFactory},
+        links::resolve_website::{ResolveWebsiteConfig, ResolveWebsiteService},
+        search::{SearchIndexFactory, SearchIndexFactoryConfig},
+        secrets::{SecretManager, SecretsManagerConfig},
+        storage::{StorageLayerFactory, StorageLayerFactoryConfig},
+        tenant::tenant_cache::TenantCache,
+        web_scraper::{WebsiteMetaService, WebsiteMetaServiceConfig},
+    },
+    extensions::{max_file_size::MaxFileSizeBytes, server_version::ServerVersion},
+    middleware::api_key::ApiKeyLayer,
+    routes::router,
 };
-use docbox_database::{DatabasePoolCache, DatabasePoolCacheConfig};
-use docbox_search::{SearchIndexFactory, SearchIndexFactoryConfig};
-use docbox_secrets::{SecretManager, SecretsManagerConfig};
-use docbox_storage::{StorageLayerFactory, StorageLayerFactoryConfig};
-use docbox_web_scraper::{WebsiteMetaService, WebsiteMetaServiceConfig};
 use lambda_http::{Error, run_with_streaming_response, tracing};
 use std::sync::Arc;
 use tower_http::trace::TraceLayer;
 
-mod background;
-pub mod docs;
-mod error;
-mod extensions;
-mod middleware;
-mod models;
-mod routes;
+mod authorizer;
 
 /// The server version extracted from the Cargo.toml
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -100,22 +96,20 @@ async fn app() -> Result<Router, Box<dyn std::error::Error + Send + Sync>> {
     let tenant_cache = Arc::new(TenantCache::new());
 
     // Setup router
-    let mut app = router()
+    let mut app = router::<false, false, false>()
+        .layer(axum::middleware::from_fn(authorizer::authorizer_middleware))
         .layer(Extension(search))
         .layer(Extension(storage))
         .layer(Extension(db_cache))
         .layer(Extension(caching_website_meta_service))
         .layer(Extension(events))
         .layer(Extension(tenant_cache))
+        .layer(Extension(ServerVersion(VERSION)))
         .layer(Extension(MaxFileSizeBytes(max_file_size_bytes)))
         .layer(TraceLayer::new_for_http());
 
     if let Some(api_key) = api_key {
         app = app.layer(ApiKeyLayer::new(api_key));
-    } else {
-        tracing::warn!(
-            "DOCBOX_API_KEY not specified, its recommended you set one for security reasons"
-        )
     }
 
     // Development mode CORS access for local browser testing

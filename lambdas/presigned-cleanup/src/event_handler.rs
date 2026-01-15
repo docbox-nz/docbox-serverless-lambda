@@ -1,16 +1,17 @@
 use aws_lambda_events::event::eventbridge::EventBridgeEvent;
-use docbox_core::aws::aws_config;
-use docbox_database::{DatabasePoolCache, DatabasePoolCacheConfig};
-use docbox_secrets::{SecretManager, SecretsManagerConfig};
-use docbox_storage::{StorageLayerFactory, StorageLayerFactoryConfig};
+use docbox_core::{
+    aws::aws_config,
+    database::{DatabasePoolCache, DatabasePoolCacheConfig},
+    purge::{
+        purge_expired_presigned_tasks::safe_purge_expired_presigned_tasks,
+        purge_expired_website_metadata::safe_purge_expired_website_metadata,
+    },
+    secrets::{SecretManager, SecretsManagerConfig},
+    storage::{StorageLayerFactory, StorageLayerFactoryConfig},
+};
 use lambda_runtime::{Error, LambdaEvent};
 use std::sync::Arc;
 use tokio::sync::OnceCell;
-
-use crate::{
-    purge_expired_presigned_tasks::safe_purge_expired_presigned_tasks,
-    purge_expired_website_metadata::safe_purge_expired_website_metadata,
-};
 
 static DEPENDENCIES: OnceCell<Dependencies> = OnceCell::const_new();
 
@@ -53,8 +54,8 @@ async fn function_handler(
     _event: LambdaEvent<EventBridgeEvent>,
     dependencies: &Dependencies,
 ) -> Result<(), Error> {
-    safe_purge_expired_presigned_tasks(&dependencies.db, &dependencies.storage).await;
-    safe_purge_expired_website_metadata(&dependencies.db).await;
+    safe_purge_expired_presigned_tasks(dependencies.db.clone(), dependencies.storage.clone()).await;
+    safe_purge_expired_website_metadata(dependencies.db.clone()).await;
 
     Ok(())
 }

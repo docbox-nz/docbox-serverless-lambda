@@ -11,11 +11,6 @@ lambda_runtime = "1.0.1"
 tokio = { version = "1", features = ["macros"] }
 
 docbox-core.workspace = true
-docbox-database.workspace = true
-docbox-processing.workspace = true
-docbox-search.workspace = true
-docbox-secrets.workspace = true
-docbox-storage.workspace = true
 
 thiserror.workspace = true
 
