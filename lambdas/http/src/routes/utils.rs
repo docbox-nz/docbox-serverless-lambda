@@ -1,10 +1,9 @@
-use axum::{Extension, Json, http::StatusCode};
-
 use crate::{
     VERSION,
     extensions::max_file_size::MaxFileSizeBytes,
     models::{document_box::DocumentBoxOptions, utils::DocboxServerResponse},
 };
+use axum::{Extension, Json, http::StatusCode};
 
 pub const UTILS_TAG: &str = "Utils";
 

@@ -32,9 +32,16 @@ pub struct Dependencies {
 }
 
 async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error + Send + Sync>> {
+    // Load AWS configuration
+    let aws_config = aws_config().await;
+
+    // Setup storage factory
+    let storage_factory_config = StorageLayerFactoryConfig::from_env()?;
+    let storage = StorageLayerFactory::from_config(&aws_config, storage_factory_config);
+
     // Create the converter
-    let converter_config = OfficeConverterConfig::from_env();
-    let converter = OfficeConverter::from_config(converter_config)?;
+    let converter_config = OfficeConverterConfig::from_env()?;
+    let converter = OfficeConverter::from_config(&aws_config, &storage, converter_config)?;
 
     // Load the config for the processing layer
     let processing_layer_config = ProcessingLayerConfig::from_env()?;
@@ -44,8 +51,6 @@ async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error + Send
         office: OfficeProcessingLayer { converter },
         config: processing_layer_config,
     };
-
-    let aws_config = aws_config().await;
 
     // Create secrets manager
     let secrets_config = SecretsManagerConfig::from_env()?;
@@ -72,10 +77,6 @@ async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error + Send
     let search_config = SearchIndexFactoryConfig::from_env()?;
     let search =
         SearchIndexFactory::from_config(&aws_config, secrets, db_cache.clone(), search_config)?;
-
-    // Setup storage factory
-    let storage_factory_config = StorageLayerFactoryConfig::from_env()?;
-    let storage = StorageLayerFactory::from_config(&aws_config, storage_factory_config);
 
     Ok(Dependencies {
         db_cache,

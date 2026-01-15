@@ -1,19 +1,16 @@
 use aws_lambda_events::event::eventbridge::EventBridgeEvent;
-use chrono::Utc;
 use docbox_core::aws::aws_config;
-use docbox_database::{
-    DatabasePoolCache, DatabasePoolCacheConfig, DbPool, DbResult,
-    models::{
-        presigned_upload_task::{PresignedTaskStatus, PresignedUploadTask},
-        tenant::Tenant,
-    },
-};
+use docbox_database::{DatabasePoolCache, DatabasePoolCacheConfig};
 use docbox_secrets::{SecretManager, SecretsManagerConfig};
-use docbox_storage::{StorageLayerFactory, StorageLayerFactoryConfig, TenantStorageLayer};
-use lambda_runtime::{Error, LambdaEvent, tracing};
+use docbox_storage::{StorageLayerFactory, StorageLayerFactoryConfig};
+use lambda_runtime::{Error, LambdaEvent};
 use std::sync::Arc;
-use thiserror::Error;
 use tokio::sync::OnceCell;
+
+use crate::{
+    purge_expired_presigned_tasks::safe_purge_expired_presigned_tasks,
+    purge_expired_website_metadata::safe_purge_expired_website_metadata,
+};
 
 static DEPENDENCIES: OnceCell<Dependencies> = OnceCell::const_new();
 
@@ -56,96 +53,8 @@ async fn function_handler(
     _event: LambdaEvent<EventBridgeEvent>,
     dependencies: &Dependencies,
 ) -> Result<(), Error> {
-    // Run the presigned purge
-    if let Err(error) = purge_expired_presigned_tasks(&dependencies.db, &dependencies.storage).await
-    {
-        tracing::error!(?error, "failed to purge presigned tasks");
-    }
-
-    Ok(())
-}
-
-#[derive(Debug, Error)]
-pub enum PurgeExpiredPresignedError {
-    #[error("failed to connect to database")]
-    ConnectDatabase,
-
-    #[error("failed to query available tenants")]
-    QueryTenants,
-}
-
-/// Purge the presigned tasks for all tenants
-#[tracing::instrument(skip_all)]
-async fn purge_expired_presigned_tasks(
-    db_cache: &Arc<DatabasePoolCache>,
-    storage: &StorageLayerFactory,
-) -> Result<(), PurgeExpiredPresignedError> {
-    let db = db_cache.get_root_pool().await.map_err(|error| {
-        tracing::error!(?error, "failed to connect to root database");
-        PurgeExpiredPresignedError::ConnectDatabase
-    })?;
-
-    let tenants = Tenant::all(&db).await.map_err(|error| {
-        tracing::error!(?error, "failed to query available tenants");
-        PurgeExpiredPresignedError::QueryTenants
-    })?;
-
-    // Early drop the root database pool access
-    drop(db);
-
-    for tenant in tenants {
-        // Create the database connection pool
-        let db = db_cache.get_tenant_pool(&tenant).await.map_err(|error| {
-            tracing::error!(?error, "failed to connect to tenant database");
-            PurgeExpiredPresignedError::ConnectDatabase
-        })?;
-
-        let storage = storage.create_storage_layer(&tenant);
-
-        if let Err(cause) = purge_expired_presigned_tasks_tenant(&db, &storage).await {
-            tracing::error!(
-                ?cause,
-                ?tenant,
-                "failed to purge presigned tasks for tenant"
-            );
-        }
-    }
-
-    Ok(())
-}
-
-/// Purge the presigned tasks for a specific tenant
-async fn purge_expired_presigned_tasks_tenant(
-    db: &DbPool,
-    storage: &TenantStorageLayer,
-) -> DbResult<()> {
-    let current_date = Utc::now();
-    let tasks = PresignedUploadTask::find_expired(db, current_date).await?;
-    if tasks.is_empty() {
-        return Ok(());
-    }
-
-    for task in tasks {
-        // Delete the task itself
-        if let Err(error) = PresignedUploadTask::delete(db, task.id).await {
-            tracing::error!(?error, "failed to delete presigned upload task");
-        }
-
-        // Delete incomplete file uploads
-        match task.status {
-            PresignedTaskStatus::Completed { .. } => {
-                // Upload completed, nothing to revert
-            }
-            PresignedTaskStatus::Failed { .. } | PresignedTaskStatus::Pending => {
-                if let Err(error) = storage.delete_file(&task.file_key).await {
-                    tracing::error!(
-                        ?error,
-                        "failed to delete expired presigned task file from tenant"
-                    );
-                }
-            }
-        }
-    }
+    safe_purge_expired_presigned_tasks(&dependencies.db, &dependencies.storage).await;
+    safe_purge_expired_website_metadata(&dependencies.db).await;
 
     Ok(())
 }

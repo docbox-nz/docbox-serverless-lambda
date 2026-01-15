@@ -5,6 +5,7 @@ use axum::{Extension, Router};
 use docbox_core::{
     aws::{SqsClient, aws_config},
     events::{EventPublisherFactory, sqs::SqsEventPublisherFactory},
+    links::resolve_website::{ResolveWebsiteConfig, ResolveWebsiteService},
     tenant::tenant_cache::TenantCache,
 };
 use docbox_database::{DatabasePoolCache, DatabasePoolCacheConfig};
@@ -16,6 +17,7 @@ use lambda_http::{Error, run_with_streaming_response, tracing};
 use std::sync::Arc;
 use tower_http::trace::TraceLayer;
 
+mod background;
 pub mod docs;
 mod error;
 mod extensions;
@@ -48,13 +50,18 @@ async fn app() -> Result<Router, Box<dyn std::error::Error + Send + Sync>> {
         Err(_) => 100 * 1000 * 1024,
     };
 
+    // Load AWS configuration
+    let aws_config = aws_config().await;
+
     // Create website scraping service
     let website_meta_service_config = WebsiteMetaServiceConfig::from_env()?;
-    let website_meta_service = Arc::new(WebsiteMetaService::from_config(
-        website_meta_service_config,
-    )?);
+    let website_meta_service = WebsiteMetaService::from_config(website_meta_service_config)?;
+    let resolve_website_config = ResolveWebsiteConfig::from_env()?;
 
-    let aws_config = aws_config().await;
+    let caching_website_meta_service = Arc::new(ResolveWebsiteService::from_client_with_config(
+        website_meta_service,
+        resolve_website_config,
+    ));
 
     // Create secrets manager
     let secrets_config = SecretsManagerConfig::from_env()?;
@@ -96,8 +103,8 @@ async fn app() -> Result<Router, Box<dyn std::error::Error + Send + Sync>> {
     let mut app = router()
         .layer(Extension(search))
         .layer(Extension(storage))
-        .layer(Extension(db_cache.clone()))
-        .layer(Extension(website_meta_service))
+        .layer(Extension(db_cache))
+        .layer(Extension(caching_website_meta_service))
         .layer(Extension(events))
         .layer(Extension(tenant_cache))
         .layer(Extension(MaxFileSizeBytes(max_file_size_bytes)))

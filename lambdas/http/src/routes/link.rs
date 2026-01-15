@@ -1,38 +1,36 @@
 //! Link related endpoints
 
-use crate::error::{HttpCommonError, HttpErrorResponse};
-use crate::middleware::action_user::UserParams;
-use crate::middleware::tenant::TenantParams;
-use crate::models::document_box::DocumentBoxScope;
 use crate::{
-    error::{DynHttpError, HttpResult, HttpStatusResult},
+    error::{DynHttpError, HttpCommonError, HttpErrorResponse, HttpResult, HttpStatusResult},
     middleware::{
-        action_user::ActionUser,
-        tenant::{TenantDb, TenantEvents, TenantSearch},
+        action_user::{ActionUser, UserParams},
+        tenant::{TenantDb, TenantEvents, TenantParams, TenantSearch},
     },
     models::{
+        document_box::DocumentBoxScope,
+        file::BinaryResponse,
         folder::HttpFolderError,
         link::{CreateLink, HttpLinkError, LinkMetadataResponse, UpdateLinkRequest},
     },
 };
-use axum::http::header;
 use axum::{
+    Extension, Json,
     body::Body,
     extract::Path,
-    http::{Response, StatusCode},
-    Extension, Json,
+    http::{Response, StatusCode, header},
 };
 use axum_valid::Garde;
-use docbox_core::links::update_link::{UpdateLink, UpdateLinkError};
 use docbox_core::links::{
-    create_link::safe_create_link, create_link::CreateLinkData, delete_link::delete_link,
+    create_link::{CreateLinkData, safe_create_link},
+    delete_link::delete_link,
+    resolve_website::ResolveWebsiteService,
+    update_link::{UpdateLink, UpdateLinkError},
 };
 use docbox_database::models::{
     edit_history::EditHistory,
     folder::Folder,
-    link::{CreatedByUser, LastModifiedByUser, Link, LinkId, LinkWithExtra},
+    link::{Link, LinkId, LinkWithExtra},
 };
-use docbox_web_scraper::WebsiteMetaService;
 use std::sync::Arc;
 
 pub const LINK_TAG: &str = "Link";
@@ -56,7 +54,7 @@ pub const LINK_TAG: &str = "Link";
         UserParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope))]
+#[tracing::instrument(skip_all, fields(%scope))]
 pub async fn create(
     action_user: ActionUser,
     TenantDb(db): TenantDb,
@@ -69,8 +67,8 @@ pub async fn create(
     let folder = Folder::find_by_id(&db, &scope, folder_id)
         .await
         // Failed to query destination folder
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query link destination folder");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query link destination folder");
             HttpCommonError::ServerError
         })?
         // Destination folder was not found
@@ -90,23 +88,18 @@ pub async fn create(
     // Perform Link creation
     let link = safe_create_link(&db, search, &events, create)
         .await
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to create link");
-            HttpLinkError::CreateError(cause)
+        .map_err(|error| {
+            tracing::error!(?error, "failed to create link");
+            HttpLinkError::CreateError(error)
         })?;
 
     Ok((
         StatusCode::CREATED,
         Json(LinkWithExtra {
-            id: link.id,
-            name: link.name,
-            value: link.value,
-            folder_id: link.folder_id,
-            created_at: link.created_at,
-            created_by: CreatedByUser(created_by),
+            link,
+            created_by,
             last_modified_at: None,
-            last_modified_by: LastModifiedByUser(None),
-            pinned: link.pinned,
+            last_modified_by: None,
         }),
     ))
 }
@@ -130,7 +123,7 @@ pub async fn create(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope, link_id = %link_id))]
+#[tracing::instrument(skip_all, fields(%scope, %link_id))]
 pub async fn get(
     TenantDb(db): TenantDb,
     Path((scope, link_id)): Path<(DocumentBoxScope, LinkId)>,
@@ -140,8 +133,8 @@ pub async fn get(
     let link = Link::find_with_extra(&db, &scope, link_id)
         .await
         // Failed to query link
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query link");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query link");
             HttpCommonError::ServerError
         })?
         // Link not found
@@ -171,33 +164,36 @@ pub async fn get(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope, link_id = %link_id))]
+#[tracing::instrument(skip_all, fields(%scope, %link_id))]
 pub async fn get_metadata(
     TenantDb(db): TenantDb,
-    Extension(website_service): Extension<Arc<WebsiteMetaService>>,
+    Extension(website_service): Extension<Arc<ResolveWebsiteService>>,
     Path((scope, link_id)): Path<(DocumentBoxScope, LinkId)>,
 ) -> HttpResult<LinkMetadataResponse> {
     let DocumentBoxScope(scope) = scope;
 
-    let link = Link::find_with_extra(&db, &scope, link_id)
+    let link = Link::find(&db, &scope, link_id)
         .await
         // Failed to query link
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query link");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query link");
             HttpCommonError::ServerError
         })?
         // Link not found
         .ok_or(HttpLinkError::UnknownLink)?;
 
-    let url = docbox_web_scraper::Url::parse(&link.value).map_err(|cause| {
-        tracing::warn!(?cause, "invalid website");
+    let url = docbox_web_scraper::Url::parse(&link.value).map_err(|error| {
+        tracing::warn!(?error, "invalid website");
         HttpLinkError::InvalidLinkUrl
     })?;
 
-    let resolved = website_service.resolve_website(&url).await.ok_or_else(|| {
-        tracing::warn!("failed to resolve link site metadata");
-        HttpLinkError::FailedResolve
-    })?;
+    let resolved = website_service
+        .resolve_website(&db, &url)
+        .await
+        .ok_or_else(|| {
+            tracing::warn!("failed to resolve link site metadata");
+            HttpLinkError::FailedResolve
+        })?;
 
     Ok(Json(LinkMetadataResponse {
         title: resolved.title,
@@ -210,15 +206,15 @@ pub async fn get_metadata(
 
 /// Get link favicon
 ///
-/// Obtain the favicon image for the website that
-/// the link points to
+/// Obtain the favicon image for the website that the link points to
+/// the image data is streamed directly from the target website
 #[utoipa::path(
     get,
     operation_id = "link_get_favicon",
     tag = LINK_TAG,
     path = "/box/{scope}/link/{link_id}/favicon",
     responses(
-        (status = 200, description = "Obtained link favicon", body = LinkWithExtra),
+        (status = 200, description = "Streamed link favicon binary data", content_type = "application/octet-stream", body = BinaryResponse),
         (status = 404, description = "Link not found or no favicon was found", body = HttpErrorResponse),
         (status = 500, description = "Internal server error", body = HttpErrorResponse)
     ),
@@ -228,40 +224,51 @@ pub async fn get_metadata(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope, link_id = %link_id))]
+#[tracing::instrument(skip_all, fields(%scope, %link_id))]
 pub async fn get_favicon(
     TenantDb(db): TenantDb,
-    Extension(website_service): Extension<Arc<WebsiteMetaService>>,
+    Extension(website_service): Extension<Arc<ResolveWebsiteService>>,
     Path((scope, link_id)): Path<(DocumentBoxScope, LinkId)>,
 ) -> Result<Response<Body>, DynHttpError> {
     let DocumentBoxScope(scope) = scope;
 
-    let link = Link::find_with_extra(&db, &scope, link_id)
+    let link = Link::find(&db, &scope, link_id)
         .await
         // Failed to query link
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query link");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query link");
             HttpCommonError::ServerError
         })?
         // Link not found
         .ok_or(HttpLinkError::UnknownLink)?;
 
-    let url = docbox_web_scraper::Url::parse(&link.value).map_err(|cause| {
-        tracing::warn!(?cause, "invalid website");
+    let url = docbox_web_scraper::Url::parse(&link.value).map_err(|error| {
+        tracing::warn!(?error, "invalid website");
         HttpLinkError::InvalidLinkUrl
     })?;
 
-    let favicon = website_service
-        .resolve_website_favicon(&url)
+    let website_metadata = website_service
+        .resolve_website(&db, &url)
         .await
         .ok_or(HttpLinkError::NoFavicon)?;
-    let body = axum::body::Body::from(favicon.bytes);
+
+    let favicon = website_service
+        .service
+        .resolve_favicon(&url, website_metadata.best_favicon)
+        .await
+        .ok_or(HttpLinkError::NoFavicon)?;
+
+    let body = axum::body::Body::from_stream(favicon.stream);
 
     Ok(Response::builder()
         .header(header::CONTENT_TYPE, favicon.content_type.to_string())
         .header(
             header::CONTENT_SECURITY_POLICY,
             "default-src 'none'; img-src 'self' data:;",
+        )
+        .header(
+            header::CACHE_CONTROL,
+            "public, max-age=3600, stale-while-revalidate=86400",
         )
         .body(body)?)
 }
@@ -270,14 +277,15 @@ pub async fn get_favicon(
 ///
 /// Obtain the "Social Image" for the website, this resolves the website
 /// metadata and finds the OGP metadata image responding with the image
-/// directly
+/// directly. The image data is streamed directly from the target
+/// website
 #[utoipa::path(
     get,
     operation_id = "link_get_image",
     tag = LINK_TAG,
     path = "/box/{scope}/link/{link_id}/image",
     responses(
-        (status = 200, description = "Obtained link social image", body = LinkWithExtra),
+        (status = 200, description = "Streamed link social image binary data", content_type = "application/octet-stream", body = BinaryResponse),
         (status = 404, description = "Link not found or no image was found", body = HttpErrorResponse),
         (status = 500, description = "Internal server error", body = HttpErrorResponse)
     ),
@@ -287,40 +295,52 @@ pub async fn get_favicon(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope, link_id = %link_id))]
+#[tracing::instrument(skip_all, fields(%scope, %link_id))]
 pub async fn get_image(
     TenantDb(db): TenantDb,
-    Extension(website_service): Extension<Arc<WebsiteMetaService>>,
+    Extension(website_service): Extension<Arc<ResolveWebsiteService>>,
     Path((scope, link_id)): Path<(DocumentBoxScope, LinkId)>,
 ) -> Result<Response<Body>, DynHttpError> {
     let DocumentBoxScope(scope) = scope;
 
-    let link = Link::find_with_extra(&db, &scope, link_id)
+    let link = Link::find(&db, &scope, link_id)
         .await
         // Failed to query link
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query link");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query link");
             HttpCommonError::ServerError
         })?
         // Link not found
         .ok_or(HttpLinkError::UnknownLink)?;
 
-    let url = docbox_web_scraper::Url::parse(&link.value).map_err(|cause| {
-        tracing::warn!(?cause, "invalid website");
+    let url = docbox_web_scraper::Url::parse(&link.value).map_err(|error| {
+        tracing::warn!(?error, "invalid website");
         HttpLinkError::InvalidLinkUrl
     })?;
 
-    let og_image = website_service
-        .resolve_website_image(&url)
+    let website_metadata = website_service
+        .resolve_website(&db, &url)
         .await
         .ok_or(HttpLinkError::NoImage)?;
-    let body = axum::body::Body::from(og_image.bytes);
+
+    let og_image = website_metadata.og_image.ok_or(HttpLinkError::NoImage)?;
+    let og_image = website_service
+        .service
+        .resolve_image(&url, &og_image)
+        .await
+        .ok_or(HttpLinkError::NoImage)?;
+
+    let body = axum::body::Body::from_stream(og_image.stream);
 
     Ok(Response::builder()
         .header(header::CONTENT_TYPE, og_image.content_type.to_string())
         .header(
             header::CONTENT_SECURITY_POLICY,
             "default-src 'none'; img-src 'self' data:;",
+        )
+        .header(
+            header::CACHE_CONTROL,
+            "public, max-age=3600, stale-while-revalidate=86400",
         )
         .body(body)?)
 }
@@ -344,7 +364,7 @@ pub async fn get_image(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope, link_id = %link_id))]
+#[tracing::instrument(skip_all, fields(%scope, %link_id))]
 pub async fn get_edit_history(
     TenantDb(db): TenantDb,
     Path((scope, link_id)): Path<(DocumentBoxScope, LinkId)>,
@@ -355,8 +375,8 @@ pub async fn get_edit_history(
     _ = Link::find(&db, &scope, link_id)
         .await
         // Failed to query link
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query link");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query link");
             HttpCommonError::ServerError
         })?
         // Link not found
@@ -365,8 +385,8 @@ pub async fn get_edit_history(
     let history = EditHistory::all_by_link(&db, link_id)
         .await
         // Failed to query edit history
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query link edit history");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query link edit history");
             HttpCommonError::ServerError
         })?;
 
@@ -393,7 +413,7 @@ pub async fn get_edit_history(
         UserParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope, link_id = %link_id, req = ?req))]
+#[tracing::instrument(skip_all, fields(%scope, %link_id, ?req))]
 pub async fn update(
     action_user: ActionUser,
     TenantDb(db): TenantDb,
@@ -406,8 +426,8 @@ pub async fn update(
     let link = Link::find(&db, &scope, link_id)
         .await
         // Failed to query link
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query link");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query link");
             HttpCommonError::ServerError
         })?
         // Link not found
@@ -426,7 +446,7 @@ pub async fn update(
 
     docbox_core::links::update_link::update_link(&db, &search, &scope, link, user_id, update)
         .await
-        .map_err(|err| match err {
+        .map_err(|error| match error {
             UpdateLinkError::UnknownTargetFolder => {
                 DynHttpError::from(HttpFolderError::UnknownTargetFolder)
             }
@@ -455,7 +475,7 @@ pub async fn update(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope, link_id = %link_id))]
+#[tracing::instrument(skip_all, fields(%scope, %link_id))]
 pub async fn delete(
     TenantDb(db): TenantDb,
     TenantSearch(search): TenantSearch,
@@ -467,8 +487,8 @@ pub async fn delete(
     let link = Link::find(&db, &scope, link_id)
         .await
         // Failed to query link
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query link");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query link");
             HttpCommonError::ServerError
         })?
         // Link not found
@@ -476,8 +496,8 @@ pub async fn delete(
 
     delete_link(&db, &search, &events, link, scope)
         .await
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to delete folder");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to delete folder");
             HttpCommonError::ServerError
         })?;
 

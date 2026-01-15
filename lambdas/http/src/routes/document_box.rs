@@ -21,7 +21,8 @@ use docbox_core::document_box::{
 use docbox_database::models::{
     document_box::DocumentBox,
     file::File,
-    folder::{self, Folder, FolderWithExtra, ResolvedFolderWithExtra},
+    folder::{Folder, FolderWithExtra, ResolvedFolderWithExtra},
+    shared::WithFullPath,
 };
 use docbox_search::models::{SearchRequest, SearchResultItem, SearchResultResponse};
 use tokio::join;
@@ -46,7 +47,7 @@ pub const DOCUMENT_BOX_TAG: &str = "Document Box";
         UserParams
     )
 )]
-#[tracing::instrument(skip_all, fields(req = ?req))]
+#[tracing::instrument(skip_all, fields(?req))]
 pub async fn create(
     action_user: ActionUser,
     TenantDb(db): TenantDb,
@@ -64,12 +65,12 @@ pub async fn create(
     let (document_box, root) =
         create_document_box(&db, &events, create)
             .await
-            .map_err(|cause| match cause {
+            .map_err(|error| match error {
                 CreateDocumentBoxError::ScopeAlreadyExists => {
                     DynHttpError::from(HttpDocumentBoxError::ScopeAlreadyExists)
                 }
-                cause => {
-                    tracing::error!(?cause, "failed to create document box");
+                error => {
+                    tracing::error!(?error, "failed to create document box");
                     DynHttpError::from(HttpCommonError::ServerError)
                 }
             })?;
@@ -79,14 +80,10 @@ pub async fn create(
         Json(DocumentBoxResponse {
             document_box,
             root: FolderWithExtra {
-                id: root.id,
-                name: root.name,
-                folder_id: root.folder_id,
-                created_at: root.created_at,
-                created_by: folder::CreatedByUser(created_by),
+                folder: root,
+                created_by,
                 last_modified_at: None,
-                last_modified_by: folder::LastModifiedByUser(None),
-                pinned: root.pinned,
+                last_modified_by: None,
             },
             children: Default::default(),
         }),
@@ -112,23 +109,26 @@ pub async fn create(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope))]
+#[tracing::instrument(skip_all, fields(%scope))]
 pub async fn get(
     TenantDb(db): TenantDb,
     Path(DocumentBoxScope(scope)): Path<DocumentBoxScope>,
 ) -> HttpResult<DocumentBoxResponse> {
     let document_box = DocumentBox::find_by_scope(&db, &scope)
         .await
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query document box");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query document box");
             HttpCommonError::ServerError
         })?
         .ok_or(HttpDocumentBoxError::UnknownDocumentBox)?;
 
-    let root = Folder::find_root_with_extra(&db, &scope)
+    let WithFullPath {
+        data: root,
+        full_path,
+    } = Folder::find_root_with_extra(&db, &scope)
         .await
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query folder");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query folder");
             HttpCommonError::ServerError
         })?
         .ok_or_else(|| {
@@ -136,10 +136,10 @@ pub async fn get(
             HttpCommonError::ServerError
         })?;
 
-    let children = ResolvedFolderWithExtra::resolve(&db, root.id)
+    let children = ResolvedFolderWithExtra::resolve(&db, root.folder.id, full_path)
         .await
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query document box root folder");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query document box root folder");
             HttpCommonError::ServerError
         })?;
 
@@ -172,7 +172,7 @@ pub async fn get(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope))]
+#[tracing::instrument(skip_all, fields(%scope))]
 pub async fn stats(
     TenantDb(db): TenantDb,
     Path(DocumentBoxScope(scope)): Path<DocumentBoxScope>,
@@ -180,16 +180,16 @@ pub async fn stats(
     // Assert that the document box exists
     let _document_box = DocumentBox::find_by_scope(&db, &scope)
         .await
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query document box");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query document box");
             HttpCommonError::ServerError
         })?
         .ok_or(HttpDocumentBoxError::UnknownDocumentBox)?;
 
-    let root = Folder::find_root_with_extra(&db, &scope)
+    let root = Folder::find_root(&db, &scope)
         .await
-        .map_err(|cause| {
-            tracing::error!(?cause, "failed to query folder");
+        .map_err(|error| {
+            tracing::error!(?error, "failed to query folder");
             HttpCommonError::ServerError
         })?
         .ok_or_else(|| {
@@ -203,13 +203,13 @@ pub async fn stats(
     // Load the children count and file sizes in parallel
     let (children, file_size) = join!(children_future, file_size_future);
 
-    let children = children.map_err(|cause| {
-        tracing::error!(?cause, "failed to query document box children count");
+    let children = children.map_err(|error| {
+        tracing::error!(?error, "failed to query document box children count");
         HttpCommonError::ServerError
     })?;
 
-    let file_size = file_size.map_err(|cause| {
-        tracing::error!(?cause, "failed to query document box file size");
+    let file_size = file_size.map_err(|error| {
+        tracing::error!(?error, "failed to query document box file size");
         HttpCommonError::ServerError
     })?;
 
@@ -243,7 +243,7 @@ pub async fn stats(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope))]
+#[tracing::instrument(skip_all, fields(%scope))]
 pub async fn delete(
     TenantDb(db): TenantDb,
     TenantSearch(search): TenantSearch,
@@ -254,10 +254,7 @@ pub async fn delete(
     delete_document_box(&db, &search, &storage, &events, &scope)
         .await
         .map_err(|error| match error {
-            DeleteDocumentBoxError::UnknownScope => {
-                DynHttpError::from(HttpDocumentBoxError::UnknownDocumentBox)
-            }
-
+            DeleteDocumentBoxError::UnknownScope => HttpDocumentBoxError::UnknownDocumentBox.into(),
             error => {
                 tracing::error!(?error, "failed to delete document box");
                 DynHttpError::from(HttpCommonError::ServerError)
@@ -286,7 +283,7 @@ pub async fn delete(
         TenantParams
     )
 )]
-#[tracing::instrument(skip_all, fields(scope = %scope, req = ?req))]
+#[tracing::instrument(skip_all, fields(%scope, ?req))]
 pub async fn search(
     TenantDb(db): TenantDb,
     TenantSearch(search): TenantSearch,

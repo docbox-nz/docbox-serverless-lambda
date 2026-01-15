@@ -1,6 +1,7 @@
 //! Admin related access and routes for managing tenants and document boxes
 
 use crate::{
+    background::purge_expired_presigned_tasks::purge_expired_presigned_tasks,
     error::{HttpCommonError, HttpErrorResponse, HttpResult, HttpStatusResult},
     middleware::tenant::{TenantDb, TenantParams, TenantSearch},
     models::admin::{TenantDocumentBoxesRequest, TenantDocumentBoxesResponse, TenantStatsResponse},
@@ -29,7 +30,8 @@ pub const ADMIN_TAG: &str = "Admin";
 
 /// Admin Boxes
 ///
-/// Requests a list of document boxes within the tenant
+/// Requests a list of document boxes within the tenant optionally filtered to
+/// a specific query with support for wildcards
 #[utoipa::path(
     post,
     operation_id = "admin_tenant_boxes",
@@ -42,7 +44,7 @@ pub const ADMIN_TAG: &str = "Admin";
     ),
     params(TenantParams)
 )]
-#[tracing::instrument(skip_all, fields(req = ?req))]
+#[tracing::instrument(skip_all, fields(?req))]
 pub async fn tenant_boxes(
     TenantDb(db): TenantDb,
     Garde(Json(req)): Garde<Json<TenantDocumentBoxesRequest>>,
@@ -107,7 +109,8 @@ pub async fn tenant_boxes(
 
 /// Admin Stats
 ///
-/// Requests stats about a tenant
+/// Requests stats about a tenant such as the total of each item type as
+/// well as the total file size consumed
 #[utoipa::path(
     get,
     operation_id = "admin_tenant_stats",
@@ -133,23 +136,23 @@ pub async fn tenant_stats(TenantDb(db): TenantDb) -> HttpResult<TenantStatsRespo
         file_size_future
     );
 
-    let total_files = total_files.map_err(|cause| {
-        tracing::error!(?cause, "failed to query tenant total files");
+    let total_files = total_files.map_err(|error| {
+        tracing::error!(?error, "failed to query tenant total files");
         HttpCommonError::ServerError
     })?;
 
-    let total_links = total_links.map_err(|cause| {
-        tracing::error!(?cause, "failed to query tenant total links");
+    let total_links = total_links.map_err(|error| {
+        tracing::error!(?error, "failed to query tenant total links");
         HttpCommonError::ServerError
     })?;
 
-    let total_folders = total_folders.map_err(|cause| {
-        tracing::error!(?cause, "failed to query tenant total folders");
+    let total_folders = total_folders.map_err(|error| {
+        tracing::error!(?error, "failed to query tenant total folders");
         HttpCommonError::ServerError
     })?;
 
-    let file_size = file_size.map_err(|cause| {
-        tracing::error!(?cause, "failed to query tenant files size");
+    let file_size = file_size.map_err(|error| {
+        tracing::error!(?error, "failed to query tenant files size");
         HttpCommonError::ServerError
     })?;
 
@@ -179,7 +182,7 @@ pub async fn tenant_stats(TenantDb(db): TenantDb) -> HttpResult<TenantStatsRespo
     ),
     params(TenantParams)
 )]
-#[tracing::instrument(skip_all, fields(req = ?req))]
+#[tracing::instrument(skip_all, fields(?req))]
 pub async fn search_tenant(
     TenantDb(db): TenantDb,
     TenantSearch(search): TenantSearch,
@@ -256,7 +259,7 @@ pub async fn reprocess_octet_stream_files_tenant() -> HttpStatusResult {
     tag = ADMIN_TAG,
     path = "/admin/rebuild-search-index",
     responses(
-        (status = 204, description = "Rebuilt successfully", body = AdminSearchResultResponse),
+        (status = 204, description = "Rebuilt successfully", body = ()),
         (status = 500, description = "Internal server error", body = HttpErrorResponse)
     ),
     params(TenantParams)
@@ -310,7 +313,8 @@ pub async fn flush_tenant_cache(
 
 /// Purge Presigned Tasks
 ///
-/// Purges all expired presigned tasks
+/// Purges all expired presigned tasks, this operation deletes any presigned uploads
+/// that have not yet been completed but have passed the expiration date
 #[utoipa::path(
     post,
     operation_id = "admin_purge_expired_presigned_tasks",
@@ -322,13 +326,12 @@ pub async fn flush_tenant_cache(
     )
 )]
 pub async fn http_purge_expired_presigned_tasks(
-    Extension(_db_cache): Extension<Arc<DatabasePoolCache>>,
-    Extension(_storage_factory): Extension<StorageLayerFactory>,
+    Extension(db_cache): Extension<Arc<DatabasePoolCache>>,
+    Extension(storage_factory): Extension<StorageLayerFactory>,
 ) -> HttpStatusResult {
-    // TODO: Implement this
-    // purge_expired_presigned_tasks(db_cache, storage_factory)
-    //     .await
-    //     .map_err(|_| HttpCommonError::ServerError)?;
+    purge_expired_presigned_tasks(db_cache, storage_factory)
+        .await
+        .map_err(|_| HttpCommonError::ServerError)?;
 
     Ok(StatusCode::NO_CONTENT)
 }
