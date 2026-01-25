@@ -11,10 +11,10 @@ dotenvy = "=0.15.7"
 
 # Docbox HTTP layer
 docbox-http = "0.6.0"
+
+# Docbox Core
 docbox-core = "0.9.0"
 
-# Futures utilities
-futures = "=0.3.31"
 
 # Bytes type used for cheap shared bytes (and utilities)
 bytes = "=1.11.0"
@@ -24,18 +24,18 @@ bytes-utils = "=0.1.4"
 tracing = "=0.1.44"
 
 # Error handling
-thiserror = "=2.0.17"
+thiserror = "=2.0.18"
 
 # Date & time
-chrono = { version = "=0.4.42", features = ["serde"] }
+chrono = { version = "=0.4.43", features = ["serde"] }
 
 # AWS configuration
 aws-config = { version = "=1.8.12", features = ["behavior-version-latest"] }
 
 # Serialization and JSON
 serde = { version = "=1.0.228", features = ["derive"] }
-serde_json = "=1.0.148"
+serde_json = "=1.0.149"
 
-[patch.crates-io]
-docbox-http = { version = "0.6.0", path = "../docbox/packages/docbox-http" }
-docbox-core = { version = "0.9.0", path = "../docbox/packages/docbox-core" }
+# [patch.crates-io]
+# docbox-http = { version = "0.6.0", path = "../docbox/packages/docbox-http" }
+# docbox-core = { version = "0.9.0", path = "../docbox/packages/docbox-core" }
