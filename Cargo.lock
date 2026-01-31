@@ -1537,9 +1537,9 @@ dependencies = [
 
 [[package]]
 name = "docbox-core"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e60dca8a88c76984c6f10ecb343ec91c312ea9c89c2af2fb600111e1d69a23e"
+checksum = "078e27461ba1400d9fc558bc84e91addf9355a7f5627fa6d74bba165a0d9bc1a"
 dependencies = [
  "aws-config",
  "aws-sdk-sqs",
@@ -1571,10 +1571,13 @@ dependencies = [
 
 [[package]]
 name = "docbox-database"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3685c7bd65a647d81671f5443ee4c48d607a0eae0a5bfa14d4bc26861cfa8fc2"
+checksum = "92c1a657167684e3c698a033ce4fa1f08003f44cde53ec5fa16a7b276206c422"
 dependencies = [
+ "aws-config",
+ "aws-credential-types",
+ "aws-sigv4",
  "chrono",
  "docbox-secrets",
  "moka",
@@ -1585,15 +1588,16 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+ "url",
  "utoipa",
  "uuid",
 ]
 
 [[package]]
 name = "docbox-http"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b107b748faf2fb66f76e16345ee52755617fe7e337d84a075146f66a544cf32"
+checksum = "423afa9a082f61d8701f425fedfce476fa633ae2510f8a4e5dc283057edb2303"
 dependencies = [
  "axum",
  "axum-valid",
@@ -1650,9 +1654,9 @@ dependencies = [
 
 [[package]]
 name = "docbox-processing"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f64831cf54e90d6191f1f1d8f6a9acc5770055e7830ee78dfeb201ed17ec8c43"
+checksum = "f9e4d93a7a25f95a94a2dd951f5c999a53382f16762a35589d4b21240c8e78ef"
 dependencies = [
  "aws-config",
  "aws-sdk-lambda",
@@ -1681,9 +1685,9 @@ dependencies = [
 
 [[package]]
 name = "docbox-search"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6031a86ef3a8ad679006a39c7341eae2de37bc8616f2c5c7a3ef17fd1f5b6f7"
+checksum = "adb11cb91eff00ce10a76dbe152cae48f2248d39199c0635454cf92d0936c74f"
 dependencies = [
  "aws-config",
  "chrono",
@@ -1721,9 +1725,9 @@ dependencies = [
 
 [[package]]
 name = "docbox-storage"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "915c564a63dd8745b6ca1b566cb2a14918a018ec9805a6a0d7f16b438e634d9c"
+checksum = "66d6ac991045fe47c181e627480e5ecf49446eeeec1ed7469b091336e8bd0b85"
 dependencies = [
  "aws-config",
  "aws-sdk-s3",
@@ -1731,7 +1735,6 @@ dependencies = [
  "bytes",
  "bytes-utils",
  "chrono",
- "docbox-database",
  "futures",
  "serde",
  "thiserror 2.0.18",

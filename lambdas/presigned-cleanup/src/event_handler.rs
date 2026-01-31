@@ -32,6 +32,7 @@ async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error + Send
 
     // Setup database cache / connector
     let db = Arc::new(DatabasePoolCache::from_config(
+        aws_config.clone(),
         db_pool_config,
         secrets.clone(),
     ));

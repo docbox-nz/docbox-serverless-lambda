@@ -15,6 +15,7 @@ use docbox_core::{
     search::{SearchIndexFactory, SearchIndexFactoryConfig},
     secrets::{SecretManager, SecretsManagerConfig},
     storage::{StorageLayerFactory, StorageLayerFactoryConfig},
+    tenant::tenant_options_ext::TenantOptionsExt,
 };
 use lambda_runtime::{Error, LambdaEvent, tracing};
 use std::sync::Arc;
@@ -60,6 +61,7 @@ async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error + Send
 
     // Setup database cache / connector
     let db_cache = Arc::new(DatabasePoolCache::from_config(
+        aws_config.clone(),
         db_pool_config,
         secrets.clone(),
     ));
@@ -211,7 +213,7 @@ pub async fn handle_file_uploaded_tenant(
     let complete = CompletePresigned { task, folder };
 
     let search = data.search.create_search_index(&tenant);
-    let storage = data.storage.create_storage_layer(&tenant);
+    let storage = data.storage.create_layer(tenant.storage_layer_options());
     let events = data.events.create_event_publisher(&tenant);
 
     // Create task future that performs the file upload

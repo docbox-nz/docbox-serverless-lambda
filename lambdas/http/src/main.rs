@@ -71,6 +71,7 @@ async fn app() -> Result<Router, Box<dyn std::error::Error + Send + Sync>> {
 
     // Setup database cache / connector
     let db_cache = Arc::new(DatabasePoolCache::from_config(
+        aws_config.clone(),
         db_pool_config,
         secrets.clone(),
     ));
