@@ -1537,9 +1537,9 @@ dependencies = [
 
 [[package]]
 name = "docbox-core"
-version = "0.10.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "078e27461ba1400d9fc558bc84e91addf9355a7f5627fa6d74bba165a0d9bc1a"
+checksum = "e78f04c83177ec240022d6d4843191d292069d41bdbe3726c796a1dc2ac939db"
 dependencies = [
  "aws-config",
  "aws-sdk-sqs",
@@ -1571,9 +1571,9 @@ dependencies = [
 
 [[package]]
 name = "docbox-database"
-version = "0.9.0"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92c1a657167684e3c698a033ce4fa1f08003f44cde53ec5fa16a7b276206c422"
+checksum = "bb5bbb65592e741bea86d09611d5fed372b8fac9c09961a97c3b683f4e0a2247"
 dependencies = [
  "aws-config",
  "aws-credential-types",
@@ -1595,9 +1595,9 @@ dependencies = [
 
 [[package]]
 name = "docbox-http"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "423afa9a082f61d8701f425fedfce476fa633ae2510f8a4e5dc283057edb2303"
+checksum = "cc419b4d0de7425d4e86f423342caabb1f6d9a52198a5e2f5dd566ce1d12d737"
 dependencies = [
  "axum",
  "axum-valid",
@@ -1623,7 +1623,7 @@ dependencies = [
 
 [[package]]
 name = "docbox-http-lambda"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "axum",
  "docbox-core",
@@ -1639,7 +1639,7 @@ dependencies = [
 
 [[package]]
 name = "docbox-presigned-cleanup-lambda"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "aws-config",
  "aws_lambda_events",
@@ -1654,9 +1654,9 @@ dependencies = [
 
 [[package]]
 name = "docbox-processing"
-version = "0.5.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9e4d93a7a25f95a94a2dd951f5c999a53382f16762a35589d4b21240c8e78ef"
+checksum = "93dd5c733c707525665f443cff9fdea83ecb43ce73545d94832859ad5e15c91f"
 dependencies = [
  "aws-config",
  "aws-sdk-lambda",
@@ -1685,9 +1685,9 @@ dependencies = [
 
 [[package]]
 name = "docbox-search"
-version = "0.9.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adb11cb91eff00ce10a76dbe152cae48f2248d39199c0635454cf92d0936c74f"
+checksum = "90e07f7cf960b0ccc1133462595b7b8ca2d09c83ee512ade2c8b3636be1ae423"
 dependencies = [
  "aws-config",
  "chrono",
@@ -1743,7 +1743,7 @@ dependencies = [
 
 [[package]]
 name = "docbox-upload-completion-lambda"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "aws-config",
  "aws_lambda_events",

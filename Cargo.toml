@@ -10,10 +10,10 @@ members = [
 dotenvy = "=0.15.7"
 
 # Docbox HTTP layer
-docbox-http = "0.7.0"
+docbox-http = "0.7.1"
 
 # Docbox Core
-docbox-core = "0.10.0"
+docbox-core = "0.11.0"
 
 # Bytes type used for cheap shared bytes (and utilities)
 bytes = "=1.11.0"
