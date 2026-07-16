@@ -20,3 +20,9 @@ variable "architecture" {
   description = "The name of the Lambda function"
   default     = "arm64"
 }
+
+variable "use_local_zip" {
+  type        = bool
+  description = "Whether to use a local zip of docbox"
+  default     = false
+}
