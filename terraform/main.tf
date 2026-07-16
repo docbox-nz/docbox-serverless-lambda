@@ -52,7 +52,8 @@ module "serverless_docbox" {
     DOCBOX_DB_HOST              = aws_db_instance.postgres.address
     DOCBOX_DB_PORT              = tostring(aws_db_instance.postgres.port)
     DOCBOX_DB_ROOT_IAM          = "true"
-    DOCBOX_SEARCH_INDEX_FACTORY = "database"
+    DOCBOX_SEARCH_INDEX_FACTORY = "database",
+    LOCAL_DEVELOPMENT           = tostring(var.local_deploy_override),
   }
   policy_arns = [
     # Provide database access

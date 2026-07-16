@@ -26,3 +26,9 @@ variable "use_local_zip" {
   description = "Whether to use a local zip of docbox"
   default     = false
 }
+
+variable "local_deploy_override" {
+  type        = bool
+  description = "Whether to override behavior so that it works with local deployments (floci / localstack)"
+  default     = false
+}

@@ -1,7 +1,6 @@
 locals {
   http_lambda_environment_variables = merge(local.shared_environment_variables, {
     AWS_LAMBDA_HTTP_IGNORE_STAGE_IN_PATH = "true",
-    LOCAL_DEVELOPMENT                    = "true",
   })
 
   http_lambda_policies = concat(var.policy_arns, [
