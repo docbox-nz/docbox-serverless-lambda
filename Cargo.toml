@@ -10,10 +10,10 @@ members = [
 dotenvy = "=0.15.7"
 
 # Docbox HTTP layer
-docbox-http = "0.7.1"
+docbox-http = "0.9.1"
 
 # Docbox Core
-docbox-core = "0.11.0"
+docbox-core = "0.13.2"
 
 # Bytes type used for cheap shared bytes (and utilities)
 bytes = "=1.11.0"
@@ -29,7 +29,7 @@ thiserror = "=2.0.18"
 chrono = { version = "=0.4.43", features = ["serde"] }
 
 # AWS configuration
-aws-config = { version = "=1.8.12", features = ["behavior-version-latest"] }
+aws-config = { version = "=1.8.14", features = ["behavior-version-latest"] }
 
 # Serialization and JSON
 serde = { version = "=1.0.228", features = ["derive"] }

@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 use axum::{Extension, Router};
 use docbox_http::{
     core::{
@@ -15,7 +16,7 @@ use docbox_http::{
     middleware::api_key::ApiKeyLayer,
     routes::router,
 };
-use lambda_http::{Error, run_with_streaming_response, tracing};
+use lambda_http::{Error, tracing};
 use std::sync::Arc;
 use tower_http::trace::TraceLayer;
 
@@ -35,7 +36,12 @@ async fn main() -> Result<(), Error> {
 
     let app = app().await?;
 
-    run_with_streaming_response(app).await
+    // Check if we are running in the restricted local environment
+    if std::env::var("LOCAL_DEVELOPMENT").is_ok_and(|value| value == "true") {
+        lambda_http::run(app).await
+    } else {
+        lambda_http::run_with_streaming_response(app).await
+    }
 }
 
 // TODO: Needs a db_cache.close_all() cleanup logic when the program exits

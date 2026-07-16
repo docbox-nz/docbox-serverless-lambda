@@ -1,5 +1,5 @@
 use ::tracing::Instrument;
-use aws_lambda_events::event::s3::S3Event;
+use aws_lambda_events::{event::s3::S3Event, sqs::SqsEvent};
 use docbox_core::{
     aws::{SqsClient, aws_config},
     database::{
@@ -88,21 +88,31 @@ async fn dependencies() -> Result<Dependencies, Box<dyn std::error::Error + Send
     })
 }
 
-pub(crate) async fn outer_function_handler(event: LambdaEvent<S3Event>) -> Result<(), Error> {
+pub(crate) async fn outer_function_handler(event: LambdaEvent<SqsEvent>) -> Result<(), Error> {
     let dependencies = DEPENDENCIES.get_or_try_init(dependencies).await?;
     function_handler(event, dependencies).await
 }
 
 async fn function_handler(
-    event: LambdaEvent<S3Event>,
+    event: LambdaEvent<SqsEvent>,
     dependencies: &Dependencies,
 ) -> Result<(), Error> {
-    let (bucket_name, object_key) = match get_object_parts(&event.payload) {
-        Some(value) => value,
-        None => return Ok(()),
-    };
+    for message in event.payload.records {
+        let body = match message.body {
+            Some(value) => value,
+            None => continue,
+        };
 
-    handle_file_uploaded(dependencies, bucket_name, object_key).await;
+        let event: S3Event = serde_json::from_str(&body)?;
+
+        let (bucket_name, object_key) = match get_object_parts(&event) {
+            Some(value) => value,
+            None => continue,
+        };
+
+        handle_file_uploaded(dependencies, bucket_name, object_key).await;
+    }
+
     Ok(())
 }
 

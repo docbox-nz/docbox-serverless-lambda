@@ -14,7 +14,6 @@
 # Terraform backend config files
 *.tfbackend
 
-
-/terraform
-
+/terraform/**/*.zip
+/terraform/data
 /private

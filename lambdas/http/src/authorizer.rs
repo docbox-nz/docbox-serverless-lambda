@@ -86,7 +86,7 @@ pub async fn authorizer_middleware(
     if let Some(tenant) = authorizer
         .fields
         .get("tenant")
-        .map(|value| serde_json::from_value::<AuthorizerTenant>(value.clone()))
+        .map(|value| serde_json::from_str::<AuthorizerTenant>(value.as_str().unwrap()))
         .transpose()
         .map_err(InvalidAuthorizerTenant)?
     {
@@ -100,7 +100,7 @@ pub async fn authorizer_middleware(
     if let Some(user) = authorizer
         .fields
         .get("user")
-        .map(|value| serde_json::from_value::<AuthorizerUser>(value.clone()))
+        .map(|value| serde_json::from_str::<AuthorizerUser>(value.as_str().unwrap()))
         .transpose()
         .map_err(InvalidAuthorizerUser)?
     {

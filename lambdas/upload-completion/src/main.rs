@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 use lambda_runtime::{Error, run, service_fn, tracing};
 
 mod event_handler;
