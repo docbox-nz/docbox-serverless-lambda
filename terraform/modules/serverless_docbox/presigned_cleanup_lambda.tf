@@ -12,7 +12,7 @@ locals {
   presigned_cleanup_lambda_memory_size   = 256
   presigned_cleanup_lambda_function_name = "docbox-presigned-cleanup-lambda"
 
-  presigned_cleanup_lambda_zip_path     = "${path.module}/../target/lambda/docbox-presigned-cleanup-lambda/bootstrap.zip"
+  presigned_cleanup_lambda_zip_path     = "${path.module}/../../../target/lambda/docbox-presigned-cleanup-lambda/bootstrap.zip"
   presigned_cleanup_lambda_download_url = "${local.serverless_base_url}/docbox-presigned-cleanup-lambda-${local.serverless_zip_arch}.zip"
 
 }

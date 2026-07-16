@@ -58,6 +58,7 @@ module "serverless_docbox" {
     # Provide database access
     aws_iam_policy.docbox_iam_rds_policy.arn
   ]
+  use_local_zip = var.use_local_zip
 }
 
 # Serverless API gateway into docbox combined with the user defined authorizer

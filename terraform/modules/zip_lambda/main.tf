@@ -1,6 +1,7 @@
 locals {
   is_url        = length(regexall("^https?://", var.zip_source)) > 0
-  download_path = "${path.module}/${var.function_name}.zip"
+  zip_suffix    = local.is_url ? "remote" : "local"
+  download_path = "${path.module}/${var.function_name}-${local.zip_suffix}.zip"
 }
 
 data "http" "lambda_zip" {

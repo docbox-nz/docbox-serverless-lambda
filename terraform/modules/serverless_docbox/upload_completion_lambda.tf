@@ -20,7 +20,7 @@ locals {
   upload_completion_lambda_memory_size   = 2048
   upload_completion_lambda_function_name = "docbox-upload-completion-lambda"
 
-  upload_completion_lambda_zip_path     = "${path.module}/../target/lambda/docbox-upload-completion-lambda/bootstrap.zip"
+  upload_completion_lambda_zip_path     = "${path.module}/../../../target/lambda/docbox-upload-completion-lambda/bootstrap.zip"
   upload_completion_lambda_download_url = "${local.serverless_base_url}/docbox-upload-completion-lambda-${local.serverless_zip_arch}.zip"
 }
 
