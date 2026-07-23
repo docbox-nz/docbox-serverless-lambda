@@ -8,10 +8,6 @@ locals {
     aws_iam_policy.docbox_s3_access_policy.arn,
   ])
 
-  http_lambda_timeout       = 60
-  http_lambda_memory_size   = 512
-  http_lambda_function_name = "docbox-http-lambda"
-
   http_lambda_zip_path     = "${path.module}/../../../target/lambda/docbox-http-lambda/bootstrap.zip"
   http_lambda_download_url = "${local.serverless_base_url}/docbox-http-lambda-${local.serverless_zip_arch}.zip"
 }
@@ -21,9 +17,9 @@ module "http_lambda" {
   architecture           = var.architecture
   source                 = "../zip_lambda"
   zip_source             = var.use_local_zip ? local.http_lambda_zip_path : local.http_lambda_download_url
-  function_name          = local.http_lambda_function_name
-  timeout                = local.http_lambda_timeout
-  memory_size            = local.http_lambda_memory_size
+  function_name          = var.http_lambda_function_name
+  timeout                = var.http_lambda_timeout
+  memory_size            = var.http_lambda_memory_size
   environment_variables  = local.http_lambda_environment_variables
   additional_policy_arns = local.http_lambda_policies
 }

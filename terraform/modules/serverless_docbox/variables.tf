@@ -42,6 +42,75 @@ variable "aws_profile" {
   type        = string
 }
 
+variable "http_lambda_timeout" {
+  description = "Timeout for the http lambda"
+  default     = 60
+}
+
+variable "http_lambda_memory_size" {
+  description = "Memory size for the http lambda"
+  type        = number
+  default     = 256
+}
+
+variable "http_lambda_function_name" {
+  description = "Function name for the http lambda"
+  type        = string
+  default     = "docbox-http-lambda"
+}
+
+variable "upload_completion_lambda_timeout" {
+  description = "Timeout for the file upload completion lambda"
+  type        = number
+  default     = 900
+}
+
+variable "upload_completion_lambda_memory_size" {
+  description = "Memory size for the file upload completion lambda"
+  type        = number
+  default     = 512
+}
+
+variable "upload_completion_lambda_function_name" {
+  description = "Function name for the upload completion lambda"
+  type        = string
+  default     = "docbox-upload-completion-lambda"
+}
+
+variable "management_lambda_timeout" {
+  description = "Timeout for the management lambda"
+  default     = 60
+}
+
+variable "management_lambda_memory_size" {
+  description = "Memory size for the management lambda"
+  type        = number
+  default     = 128
+}
+
+variable "management_lambda_function_name" {
+  description = "Function name for the management lambda"
+  type        = string
+  default     = "docbox-management-lambda"
+}
+
+variable "cleanup_lambda_timeout" {
+  description = "Timeout for the cleanup lambda"
+  default     = 180
+}
+
+variable "cleanup_lambda_memory_size" {
+  description = "Memory size for the cleanup lambda"
+  type        = number
+  default     = 256
+}
+
+variable "cleanup_lambda_function_name" {
+  description = "Function name for the cleanup lambda"
+  type        = string
+  default     = "docbox-cleanup-lambda"
+}
+
 variable "cleanup_schedule_expression" {
   description = "Schedule expression for how often the cleanup lambda should run"
   type        = string

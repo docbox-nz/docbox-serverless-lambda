@@ -1,4 +1,3 @@
-# TODO: Connect to event schedule
 locals {
   upload_completion_lambda_environment_variables = merge(local.shared_environment_variables, {
     DOCBOX_OFFICE_CONVERTER             = "lambda"
@@ -14,11 +13,6 @@ locals {
     # Provide invoke access to the office converter lambda
     module.office_converter_lambda.invoke_policy_arn
   ])
-
-
-  upload_completion_lambda_timeout       = 900
-  upload_completion_lambda_memory_size   = 2048
-  upload_completion_lambda_function_name = "docbox-upload-completion-lambda"
 
   upload_completion_lambda_zip_path     = "${path.module}/../../../target/lambda/docbox-upload-completion-lambda/bootstrap.zip"
   upload_completion_lambda_download_url = "${local.serverless_base_url}/docbox-upload-completion-lambda-${local.serverless_zip_arch}.zip"
@@ -36,10 +30,10 @@ module "office_converter_lambda" {
 module "upload_completion_lambda" {
   architecture           = var.architecture
   source                 = "../zip_lambda"
-  function_name          = local.upload_completion_lambda_function_name
+  function_name          = var.upload_completion_lambda_function_name
   zip_source             = var.use_local_zip ? local.upload_completion_lambda_zip_path : local.upload_completion_lambda_download_url
-  timeout                = local.upload_completion_lambda_timeout
-  memory_size            = local.upload_completion_lambda_memory_size
+  timeout                = var.upload_completion_lambda_timeout
+  memory_size            = var.upload_completion_lambda_memory_size
   environment_variables  = local.upload_completion_lambda_environment_variables
   additional_policy_arns = local.upload_completion_lambda_policies
 }

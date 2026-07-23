@@ -6,14 +6,8 @@ locals {
     aws_iam_policy.docbox_management_lambda_s3.arn
   ])
 
-
-  management_lambda_timeout       = 60
-  management_lambda_memory_size   = 256
-  management_lambda_function_name = "docbox-management-lambda"
-
   management_lambda_zip_path     = "${path.module}/../../../target/lambda/docbox-management-lambda/bootstrap.zip"
   management_lambda_download_url = "${local.serverless_base_url}/docbox-management-lambda-${local.serverless_zip_arch}.zip"
-
 }
 
 # Lambda for management of the serverless docbox setup
@@ -21,15 +15,14 @@ locals {
 module "management_lambda" {
   architecture           = var.architecture
   source                 = "../zip_lambda"
-  function_name          = local.management_lambda_function_name
+  function_name          = var.management_lambda_function_name
   zip_source             = var.use_local_zip ? local.management_lambda_zip_path : local.management_lambda_download_url
-  timeout                = local.management_lambda_timeout
-  memory_size            = local.management_lambda_memory_size
+  timeout                = var.management_lambda_timeout
+  memory_size            = var.management_lambda_memory_size
   environment_variables  = local.management_lambda_environment_variables
   additional_policy_arns = local.management_lambda_policies
 }
 
-# http://a0e649480156353ea2724e13d689cd53.lambda-url.us-east-1.localhost:4566/
 resource "aws_iam_policy" "docbox_management_lambda_s3" {
   name        = "docbox-management-lambda-s3-access"
   description = "Allows management of docbox S3 buckets"

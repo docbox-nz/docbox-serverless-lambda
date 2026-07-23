@@ -6,24 +6,18 @@ locals {
     # TODO: Policy to allow execution via event
   ])
 
-
-  cleanup_lambda_timeout       = 180
-  cleanup_lambda_memory_size   = 256
-  cleanup_lambda_function_name = "docbox-cleanup-lambda"
-
   cleanup_lambda_zip_path     = "${path.module}/../../../target/lambda/docbox-cleanup-lambda/bootstrap.zip"
   cleanup_lambda_download_url = "${local.serverless_base_url}/docbox-cleanup-lambda-${local.serverless_zip_arch}.zip"
-
 }
 
 # Lambda for the automated presigned database&s3 cleanup task
 module "presigned_cleanup_lambda" {
   architecture           = var.architecture
   source                 = "../zip_lambda"
-  function_name          = local.cleanup_lambda_function_name
+  function_name          = var.cleanup_lambda_function_name
   zip_source             = var.use_local_zip ? local.cleanup_lambda_zip_path : local.cleanup_lambda_download_url
-  timeout                = local.cleanup_lambda_timeout
-  memory_size            = local.cleanup_lambda_memory_size
+  timeout                = var.cleanup_lambda_timeout
+  memory_size            = var.cleanup_lambda_memory_size
   environment_variables  = local.cleanup_lambda_environment_variables
   additional_policy_arns = local.cleanup_lambda_policies
 }
