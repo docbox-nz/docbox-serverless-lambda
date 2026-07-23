@@ -4,8 +4,10 @@ use docbox_management::{
     root::{initialize::InitializeError, migrate_root::MigrateRootError},
     tenant::{
         create_tenant::CreateTenantError, delete_tenant::DeleteTenantError,
-        flush_tenant_cache::FlushTenantCacheError, migrate_tenant_secret_to_iam::MigrateIAMError,
-        migrate_tenants::MigrateTenantsError, migrate_tenants_search::MigrateTenantsSearchError,
+        flush_tenant_cache::FlushTenantCacheError, migrate_tenant_search::MigrateTenantSearchError,
+        migrate_tenant_secret_to_iam::MigrateIAMError,
+        migrate_tenant_storage::MigrateTenantStorageError, migrate_tenants::MigrateTenantsError,
+        migrate_tenants_search::MigrateTenantsSearchError,
         migrate_tenants_storage::MigrateTenantsStorageError,
     },
 };
@@ -108,6 +110,17 @@ impl CommandError for MigrateRootError {}
 impl CommandError for MigrateIAMError {}
 
 impl CommandError for MigrateTenantsSearchError {}
+
+impl CommandError for MigrateTenantSearchError {}
+
+impl CommandError for MigrateTenantStorageError {}
+
+impl CommandError
+    for docbox_management::tenant::get_pending_tenant_storage_migrations::GetPendingTenantMigrationsError
+{
+}
+
+impl CommandError for docbox_management::tenant::get_pending_tenant_search_migrations::GetPendingTenantMigrationsError {}
 
 #[derive(Debug, Error)]
 #[error("tenant not found")]

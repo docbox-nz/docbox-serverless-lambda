@@ -5,12 +5,18 @@ use docbox_management::{
     tenant::{
         create_tenant::CreateTenantConfig, delete_tenant::DeleteTenant,
         flush_tenant_cache::flush_tenant_cache,
+        get_pending_tenant_migrations::get_pending_tenant_migrations,
+        get_pending_tenant_search_migrations::get_pending_tenant_search_migrations,
+        get_pending_tenant_storage_migrations::get_pending_tenant_storage_migrations,
     },
 };
 use serde_json::json;
 
 use crate::{
-    commands::{DeleteTenantCommand, GetTenantCommand, SetTenantAllowedCorsOriginsCommand},
+    commands::{
+        DeleteTenantCommand, GetTenantCommand, GetTenantPendingMigrationsCommand,
+        SetTenantAllowedCorsOriginsCommand,
+    },
     error::{CommandResult, TenantNotFoundError},
 };
 
@@ -106,4 +112,72 @@ pub async fn set_allowed_storage_cors_origins(
     storage.set_bucket_cors_origins(command.origins).await?;
 
     Ok(json!({}))
+}
+
+pub async fn get_tenant_pending_migrations(
+    managed_server: &ManagedServer,
+    command: GetTenantPendingMigrationsCommand,
+) -> CommandResult {
+    let tenant = docbox_management::tenant::get_tenant::get_tenant(
+        &managed_server.db_provider,
+        &command.env,
+        command.tenant_id,
+    )
+    .await?
+    .ok_or(TenantNotFoundError)?;
+
+    let pending_migrations =
+        get_pending_tenant_migrations(&managed_server.db_provider, &tenant).await?;
+
+    Ok(json!({
+        "migrations": pending_migrations
+    }))
+}
+
+pub async fn get_tenant_pending_search_migrations(
+    managed_server: &ManagedServer,
+    command: GetTenantPendingMigrationsCommand,
+) -> CommandResult {
+    let tenant = docbox_management::tenant::get_tenant::get_tenant(
+        &managed_server.db_provider,
+        &command.env,
+        command.tenant_id,
+    )
+    .await?
+    .ok_or(TenantNotFoundError)?;
+
+    let pending_migrations = get_pending_tenant_storage_migrations(
+        &managed_server.db_provider,
+        &managed_server.storage,
+        &tenant,
+    )
+    .await?;
+
+    Ok(json!({
+        "migrations": pending_migrations
+    }))
+}
+
+pub async fn get_tenant_pending_storage_migrations(
+    managed_server: &ManagedServer,
+    command: GetTenantPendingMigrationsCommand,
+) -> CommandResult {
+    let tenant = docbox_management::tenant::get_tenant::get_tenant(
+        &managed_server.db_provider,
+        &command.env,
+        command.tenant_id,
+    )
+    .await?
+    .ok_or(TenantNotFoundError)?;
+
+    let pending_migrations = get_pending_tenant_search_migrations(
+        &managed_server.db_provider,
+        &managed_server.search,
+        &tenant,
+    )
+    .await?;
+
+    Ok(json!({
+        "migrations": pending_migrations
+    }))
 }

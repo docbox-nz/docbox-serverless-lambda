@@ -43,6 +43,12 @@ pub enum Command {
     MigrateStorage(MigrateTenantsStorageConfig),
     /// Migrate a tenant from secrets based DB authentication to IAM authentication
     MigrateIAM(MigrateTenantIamCommand),
+    /// Get pending migrations for a tenant
+    GetTenantPendingMigrations(GetTenantPendingMigrationsCommand),
+    /// Get pending search migrations for a tenant
+    GetTenantPendingSearchMigrations(GetTenantPendingMigrationsCommand),
+    /// Get pending storage migrations for a tenant
+    GetTenantPendingStorageMigrations(GetTenantPendingMigrationsCommand),
 }
 
 #[derive(Debug, Deserialize)]
@@ -51,6 +57,11 @@ pub struct GetTenantCommand {
     pub tenant_id: Uuid,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct GetTenantPendingMigrationsCommand {
+    pub env: String,
+    pub tenant_id: Uuid,
+}
 #[derive(Debug, Deserialize)]
 pub struct DeleteTenantCommand {
     pub env: String,
@@ -100,6 +111,15 @@ pub async fn execute_command(
         Command::MigrateSearch(command) => migrate::migrate_search(managed_server, command).await,
         Command::MigrateStorage(command) => migrate::migrate_storage(managed_server, command).await,
         Command::MigrateIAM(command) => migrate::migrate_tenant_iam(managed_server, command).await,
+        Command::GetTenantPendingMigrations(command) => {
+            tenant::get_tenant_pending_migrations(managed_server, command).await
+        }
+        Command::GetTenantPendingSearchMigrations(command) => {
+            tenant::get_tenant_pending_search_migrations(managed_server, command).await
+        }
+        Command::GetTenantPendingStorageMigrations(command) => {
+            tenant::get_tenant_pending_storage_migrations(managed_server, command).await
+        }
     };
 
     let payload = result?;
