@@ -49,8 +49,8 @@ module "serverless_docbox" {
   management_config_secret_id = aws_secretsmanager_secret.config_secret.id
 
   # Provide the authorizer
-  authorizer_lambda_function_name = aws_lambda_function.authorizer.function_name
-  authorizer_lambda_invoke_arn    = aws_lambda_function.authorizer.invoke_arn
+  authorizer_lambda_function_name = module.authorizer_lambda.function_name
+  authorizer_lambda_invoke_arn    = module.authorizer_lambda.function_invoke_arn
 }
 
 # Setup a configuration secret for the management lambda

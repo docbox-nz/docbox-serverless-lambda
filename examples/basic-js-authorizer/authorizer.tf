@@ -10,35 +10,16 @@ data "archive_file" "authorizer_zip" {
   }
 }
 
-locals {
-  authorizer_file_path   = data.archive_file.authorizer_zip.output_path
-  authorizer_source_hash = data.archive_file.authorizer_zip.output_base64sha256
-}
+# Lambda
+module "authorizer_lambda" {
+  source  = "jacobtread/simple-zip-lambda/aws"
+  version = "0.1.0"
 
-# Always attach basic execution for CloudWatch Logging
-resource "aws_iam_role_policy_attachment" "lambda_logs" {
-  role       = aws_iam_role.lambda_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-# Deploy the Lambda
-resource "aws_lambda_function" "authorizer" {
-  filename         = local.authorizer_file_path
-  function_name    = "docbox-authorizer-lambda"
-  role             = aws_iam_role.lambda_exec.arn
-  architectures    = [var.architecture]
-  runtime          = "nodejs22.x"
-  handler          = "index.handler"
-  source_code_hash = local.authorizer_source_hash
-
-  timeout     = 60
-  memory_size = 256
-
-  environment {
-  }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.lambda_logs,
-    local_sensitive_file.downloaded_zip
-  ]
+  architecture  = var.architecture
+  zip_source    = data.archive_file.authorizer_zip.output_path
+  function_name = "docbox-authorizer-lambda"
+  timeout       = 60
+  memory_size   = 256
+  handler       = "index.handler"
+  runtime       = "nodejs22.x"
 }
