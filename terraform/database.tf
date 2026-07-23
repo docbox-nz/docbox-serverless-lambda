@@ -46,18 +46,18 @@ resource "aws_db_instance" "postgres" {
   engine                = "postgres"
   engine_version        = "16.3"
 
-  instance_class = "db.t4g.micro"
+  instance_class = "db.t3.micro"
 
-  db_name  = "docbox"
-  username = "docbox_admin"
-  password = "test"
+  db_name                     = "docbox"
+  username                    = "docbox_admin"
+  manage_master_user_password = true
 
   db_subnet_group_name   = aws_db_subnet_group.db_subnets.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
-  publicly_accessible = true
-  skip_final_snapshot = true
-
+  publicly_accessible                 = true
+  skip_final_snapshot                 = true
+  iam_database_authentication_enabled = true
 }
 
 # IAM Policy that allows the docbox role to connect to the docbox databases

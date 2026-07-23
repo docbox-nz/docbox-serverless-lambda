@@ -15,6 +15,17 @@ variable "policy_arns" {
   description = "ARNs of required IAM policies for the lambdas (HTTP, Presigned Cleanup, Upload Completion) include your database IAM policy ARN here "
 }
 
+variable "management_policy_arns" {
+  type        = list(string)
+  description = "ARNs of required IAM policies for the the management lambda, these should be the policies that allow it to perform required setup actions"
+}
+
+
+variable "management_config_secret_id" {
+  type        = string
+  description = "ID of the secret that the management config is stored in"
+}
+
 variable "environment_variables" {
   type        = map(string)
   description = "The shared environment variables mapping required by Docbox services"

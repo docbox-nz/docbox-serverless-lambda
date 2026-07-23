@@ -49,6 +49,7 @@ module "serverless_docbox" {
   aws_region   = var.aws_region
   architecture = var.architecture
   environment_variables = {
+    RUST_LOG                    = "debug",
     DOCBOX_DB_HOST              = aws_db_instance.postgres.address
     DOCBOX_DB_PORT              = tostring(aws_db_instance.postgres.port)
     DOCBOX_DB_ROOT_IAM          = "true"
@@ -59,7 +60,9 @@ module "serverless_docbox" {
     # Provide database access
     aws_iam_policy.docbox_iam_rds_policy.arn
   ]
-  use_local_zip = var.use_local_zip
+  management_policy_arns      = []
+  use_local_zip               = var.use_local_zip
+  management_config_secret_id = aws_secretsmanager_secret.config_secret.id
 }
 
 # Serverless API gateway into docbox combined with the user defined authorizer
@@ -71,4 +74,33 @@ module "serverless_docbox_api" {
 
   authorizer_lambda_function_name = module.authorizer_lambda.function_name
   authorizer_lambda_invoke_arn    = module.authorizer_lambda.function_invoke_arn
+}
+
+resource "aws_secretsmanager_secret" "config_secret" {
+  name        = "docbox-management-config-secret"
+  description = "Secret containing the management configuration for docbox"
+}
+
+resource "aws_secretsmanager_secret_version" "config_secret_version" {
+  secret_id = aws_secretsmanager_secret.config_secret.id
+  secret_string = jsonencode({
+    api = {
+      url = module.serverless_docbox_api.api_endpoint
+    }
+    database = {
+      host                   = aws_db_instance.postgres.address
+      port                   = aws_db_instance.postgres.port
+      setup_user_secret_name = aws_db_instance.postgres.master_user_secret[0].secret_arn
+      root_iam               = true
+    }
+    search = {
+      provider = "database"
+    }
+    secrets = {
+      provider = "aws"
+    }
+    storage = {
+      provider = "s3"
+    }
+  })
 }
