@@ -1713,6 +1713,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "docbox-cleanup-lambda"
+version = "0.0.3"
+dependencies = [
+ "aws-config",
+ "aws_lambda_events",
+ "chrono",
+ "docbox-core",
+ "dotenvy",
+ "lambda_runtime",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "docbox-core"
 version = "0.13.3"
 dependencies = [
@@ -1833,21 +1848,6 @@ dependencies = [
  "lambda_runtime",
  "serde",
  "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "docbox-presigned-cleanup-lambda"
-version = "0.0.3"
-dependencies = [
- "aws-config",
- "aws_lambda_events",
- "chrono",
- "docbox-core",
- "dotenvy",
- "lambda_runtime",
  "thiserror 2.0.18",
  "tokio",
  "tracing",

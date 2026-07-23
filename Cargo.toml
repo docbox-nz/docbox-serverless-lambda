@@ -2,7 +2,7 @@
 resolver = "3"
 members = [
     "lambdas/http",
-    "lambdas/presigned-cleanup",
+    "lambdas/cleanup",
     "lambdas/upload-completion",
     "lambdas/management"
 ]

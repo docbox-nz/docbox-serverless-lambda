@@ -1,5 +1,5 @@
 [package]
-name = "docbox-presigned-cleanup-lambda"
+name = "docbox-cleanup-lambda"
 version = "0.0.3"
 edition = "2024"
 

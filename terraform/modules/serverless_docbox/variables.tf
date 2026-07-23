@@ -41,3 +41,9 @@ variable "aws_profile" {
   description = "The AWS cli profile to use"
   type        = string
 }
+
+variable "cleanup_schedule_expression" {
+  description = "Schedule expression for how often the cleanup lambda should run"
+  type        = string
+  default     = "rate(1 day)"
+}

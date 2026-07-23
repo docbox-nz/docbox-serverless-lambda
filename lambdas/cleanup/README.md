@@ -1,4 +1,4 @@
-# Docbox Presigned Cleanup Lambda
+# Docbox Cleanup Lambda
 
 presigned-cleanup is a background task to perform cleanup and deletion of
 expired presigned file upload resource
