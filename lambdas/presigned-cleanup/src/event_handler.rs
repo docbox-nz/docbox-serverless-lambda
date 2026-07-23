@@ -4,6 +4,7 @@ use docbox_core::{
     database::{DatabasePoolCache, DatabasePoolCacheConfig},
     purge::{
         purge_expired_presigned_tasks::safe_purge_expired_presigned_tasks,
+        purge_expired_tasks::safe_purge_expired_tasks,
         purge_expired_website_metadata::safe_purge_expired_website_metadata,
     },
     secrets::{SecretManager, SecretsManagerConfig},
@@ -57,6 +58,7 @@ async fn function_handler(
 ) -> Result<(), Error> {
     safe_purge_expired_presigned_tasks(dependencies.db.clone(), dependencies.storage.clone()).await;
     safe_purge_expired_website_metadata(dependencies.db.clone()).await;
+    safe_purge_expired_tasks(dependencies.db.clone()).await;
 
     Ok(())
 }
