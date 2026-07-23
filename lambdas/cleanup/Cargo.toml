@@ -1,0 +1,19 @@
+[package]
+name = "docbox-cleanup-lambda"
+version = "0.0.3"
+edition = "2024"
+
+[dependencies]
+aws-config.workspace = true
+aws_lambda_events = { version = "1.0.0", default-features = false, features = ["eventbridge"] }
+
+lambda_runtime = "1.0.1"
+tokio = { version = "1", features = ["macros"] }
+
+docbox-core.workspace = true
+
+thiserror.workspace = true
+chrono.workspace = true
+
+tracing.workspace = true
+dotenvy.workspace = true

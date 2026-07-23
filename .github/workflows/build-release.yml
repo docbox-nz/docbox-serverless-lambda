@@ -45,8 +45,9 @@ jobs:
             - name: Copy binary to output
               run: |
                   cp target/lambda/docbox-http-lambda/bootstrap.zip docbox-http-lambda-amd64.zip
-                  cp target/lambda/docbox-presigned-cleanup-lambda/bootstrap.zip docbox-presigned-cleanup-lambda-amd64.zip
+                  cp target/lambda/docbox-cleanup-lambda/bootstrap.zip docbox-cleanup-lambda-amd64.zip
                   cp target/lambda/docbox-upload-completion-lambda/bootstrap.zip docbox-upload-completion-lambda-amd64.zip
+                  cp target/lambda/docbox-management-lambda/bootstrap.zip docbox-management-lambda-amd64.zip
               shell: bash
 
             # Build the docker layers
@@ -63,17 +64,23 @@ jobs:
                   name: docbox-http-lambda-amd64.zip
                   path: docbox-http-lambda-amd64.zip
 
-            - name: Upload docbox-presigned-cleanup-lambda-amd64.zip
+            - name: Upload docbox-cleanup-lambda-amd64.zip
               uses: actions/upload-artifact@v4
               with:
-                  name: docbox-presigned-cleanup-lambda-amd64.zip
-                  path: docbox-presigned-cleanup-lambda-amd64.zip
+                  name: docbox-cleanup-lambda-amd64.zip
+                  path: docbox-cleanup-lambda-amd64.zip
 
             - name: Upload docbox-upload-completion-lambda-amd64.zip
               uses: actions/upload-artifact@v4
               with:
                   name: docbox-upload-completion-lambda-amd64.zip
                   path: docbox-upload-completion-lambda-amd64.zip
+
+            - name: Upload docbox-management-lambda-amd64.zip
+              uses: actions/upload-artifact@v4
+              with:
+                  name: docbox-management-lambda-amd64.zip
+                  path: docbox-management-lambda-amd64.zip
 
             - name: Upload poppler-lambda-layer-amd64.zip
               uses: actions/upload-artifact@v4
@@ -112,8 +119,9 @@ jobs:
             - name: Copy binary to output
               run: |
                   cp target/lambda/docbox-http-lambda/bootstrap.zip docbox-http-lambda-arm64.zip
-                  cp target/lambda/docbox-presigned-cleanup-lambda/bootstrap.zip docbox-presigned-cleanup-lambda-arm64.zip
+                  cp target/lambda/docbox-cleanup-lambda/bootstrap.zip docbox-cleanup-lambda-arm64.zip
                   cp target/lambda/docbox-upload-completion-lambda/bootstrap.zip docbox-upload-completion-lambda-arm64.zip
+                  cp target/lambda/docbox-management-lambda/bootstrap.zip docbox-management-lambda-arm64.zip
               shell: bash
 
             - name: Set up QEMU
@@ -136,17 +144,23 @@ jobs:
                   name: docbox-http-lambda-arm64.zip
                   path: docbox-http-lambda-arm64.zip
 
-            - name: Upload docbox-presigned-cleanup-lambda-arm64.zip
+            - name: Upload docbox-cleanup-lambda-arm64.zip
               uses: actions/upload-artifact@v4
               with:
-                  name: docbox-presigned-cleanup-lambda-arm64.zip
-                  path: docbox-presigned-cleanup-lambda-arm64.zip
+                  name: docbox-cleanup-lambda-arm64.zip
+                  path: docbox-cleanup-lambda-arm64.zip
 
             - name: Upload docbox-upload-completion-lambda-arm64.zip
               uses: actions/upload-artifact@v4
               with:
                   name: docbox-upload-completion-lambda-arm64.zip
                   path: docbox-upload-completion-lambda-arm64.zip
+
+            - name: Upload docbox-management-lambda-arm64.zip
+              uses: actions/upload-artifact@v4
+              with:
+                  name: docbox-management-lambda-arm64.zip
+                  path: docbox-management-lambda-arm64.zip
 
             - name: Upload poppler-lambda-layer-arm64.zip
               uses: actions/upload-artifact@v4
