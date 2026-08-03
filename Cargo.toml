@@ -14,7 +14,7 @@ dotenvy = "=0.15.7"
 docbox-http = "0.9.2"
 
 # Docbox Core
-docbox-core = "0.13.3"
+docbox-core = "0.15.0"
 
 # Docbox management layer
 docbox-management = "0.13.0"
@@ -28,17 +28,17 @@ bytes-utils = "=0.1.4"
 tracing = "=0.1.44"
 
 # Error handling
-thiserror = "=2.0.18"
+thiserror = "=2.0.19"
 
 # Date & time
-chrono = { version = "=0.4.43", features = ["serde"] }
+chrono = { version = "=0.4.45", features = ["serde"] }
 
 # AWS configuration
 aws-config = { version = "=1.8.14", features = ["behavior-version-latest"] }
 
 # Serialization and JSON
-serde = { version = "=1.0.228", features = ["derive"] }
-serde_json = "=1.0.149"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
 
 # [patch.crates-io]
 # docbox-http = { version = "0.9.1", path = "../docbox/packages/docbox-http" }
