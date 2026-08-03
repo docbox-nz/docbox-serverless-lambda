@@ -1725,12 +1725,45 @@ dependencies = [
  "aws-config",
  "aws_lambda_events",
  "chrono",
- "docbox-core",
+ "docbox-core 0.13.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenvy",
  "lambda_runtime",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "docbox-core"
+version = "0.13.3"
+dependencies = [
+ "aws-config",
+ "aws-sdk-sqs",
+ "bytes",
+ "chrono",
+ "docbox-database 0.11.1",
+ "docbox-processing 0.7.2",
+ "docbox-search 0.11.1",
+ "docbox-secrets 0.5.1",
+ "docbox-storage 0.8.2",
+ "docbox-web-scraper 0.6.1",
+ "futures",
+ "itertools",
+ "mime",
+ "mime2ext",
+ "mime_guess",
+ "moka",
+ "serde",
+ "serde_json",
+ "sha256",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "url",
+ "urlencoding",
+ "utoipa",
+ "uuid",
+ "zip",
 ]
 
 [[package]]
@@ -1743,12 +1776,12 @@ dependencies = [
  "aws-sdk-sqs",
  "bytes",
  "chrono",
- "docbox-database",
- "docbox-processing",
- "docbox-search",
- "docbox-secrets",
- "docbox-storage",
- "docbox-web-scraper",
+ "docbox-database 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "docbox-processing 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "docbox-search 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "docbox-secrets 0.5.0",
+ "docbox-storage 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "docbox-web-scraper 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures",
  "itertools",
  "mime",
@@ -1771,6 +1804,28 @@ dependencies = [
 [[package]]
 name = "docbox-database"
 version = "0.11.1"
+dependencies = [
+ "aws-config",
+ "aws-credential-types",
+ "aws-sigv4",
+ "chrono",
+ "docbox-secrets 0.5.1",
+ "moka",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "strum 0.28.0",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "url",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "docbox-database"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f357f1079ae6e114c29cf15379ebe110c8677f60b4e5abfbc16ee8cb4c51d278"
 dependencies = [
@@ -1778,7 +1833,7 @@ dependencies = [
  "aws-credential-types",
  "aws-sigv4",
  "chrono",
- "docbox-secrets",
+ "docbox-secrets 0.5.0",
  "moka",
  "serde",
  "serde_json",
@@ -1803,7 +1858,7 @@ dependencies = [
  "axum_typed_multipart",
  "bytes",
  "chrono",
- "docbox-core",
+ "docbox-core 0.13.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures",
  "garde",
  "mime",
@@ -1824,7 +1879,7 @@ name = "docbox-http-lambda"
 version = "0.0.3"
 dependencies = [
  "axum",
- "docbox-core",
+ "docbox-core 0.13.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "docbox-http",
  "dotenvy",
  "lambda_http",
@@ -1837,12 +1892,11 @@ dependencies = [
 
 [[package]]
 name = "docbox-management"
-version = "0.12.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0ce6c6cf5102db37e6b265d19c4cb48e8f824051fe95e7278c2b3cff02bf421"
+version = "0.13.0"
 dependencies = [
  "aws-config",
- "docbox-core",
+ "docbox-core 0.13.3",
+ "docbox-management-interface",
  "futures",
  "rand 0.10.2",
  "reqwest",
@@ -1854,10 +1908,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "docbox-management-interface"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "uuid",
+]
+
+[[package]]
 name = "docbox-management-lambda"
 version = "0.0.3"
 dependencies = [
  "docbox-management",
+ "docbox-management-interface",
  "dotenvy",
  "lambda_runtime",
  "serde",
@@ -1870,6 +1936,35 @@ dependencies = [
 [[package]]
 name = "docbox-processing"
 version = "0.7.2"
+dependencies = [
+ "aws-config",
+ "aws-sdk-lambda",
+ "base64",
+ "bytes",
+ "docbox-database 0.11.1",
+ "docbox-search 0.11.1",
+ "docbox-storage 0.8.2",
+ "futures",
+ "html-escape",
+ "image",
+ "mail-parser",
+ "mime",
+ "office-convert-client",
+ "office-convert-lambda-client",
+ "pdf_process",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tl",
+ "tokio",
+ "tracing",
+ "utoipa",
+]
+
+[[package]]
+name = "docbox-processing"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18763abd6fda3556b87b002314541c5c98817e54ec8c7d319f490bc32fed64a2"
 dependencies = [
@@ -1877,9 +1972,9 @@ dependencies = [
  "aws-sdk-lambda",
  "base64",
  "bytes",
- "docbox-database",
- "docbox-search",
- "docbox-storage",
+ "docbox-database 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "docbox-search 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "docbox-storage 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures",
  "html-escape",
  "image",
@@ -1901,13 +1996,36 @@ dependencies = [
 [[package]]
 name = "docbox-search"
 version = "0.11.1"
+dependencies = [
+ "aws-config",
+ "chrono",
+ "docbox-database 0.11.1",
+ "docbox-secrets 0.5.1",
+ "garde",
+ "itertools",
+ "mime",
+ "opensearch",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "docbox-search"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8deeb4188a31062a23ebc1c365146d12dcb2cbde86e2682c7f70ec152d22bf70"
 dependencies = [
  "aws-config",
  "chrono",
- "docbox-database",
- "docbox-secrets",
+ "docbox-database 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "docbox-secrets 0.5.0",
  "garde",
  "itertools",
  "mime",
@@ -1939,6 +2057,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "docbox-secrets"
+version = "0.5.1"
+dependencies = [
+ "aws-config",
+ "aws-sdk-secretsmanager",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "docbox-storage"
+version = "0.8.2"
+dependencies = [
+ "aws-config",
+ "aws-sdk-s3",
+ "aws-smithy-types",
+ "bytes",
+ "bytes-utils",
+ "chrono",
+ "futures",
+ "itertools",
+ "serde",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
 name = "docbox-storage"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1963,7 +2111,7 @@ version = "0.0.3"
 dependencies = [
  "aws-config",
  "aws_lambda_events",
- "docbox-core",
+ "docbox-core 0.13.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenvy",
  "lambda_runtime",
  "serde_json",
@@ -1971,6 +2119,24 @@ dependencies = [
  "tokio",
  "tracing",
  "urlencoding",
+]
+
+[[package]]
+name = "docbox-web-scraper"
+version = "0.6.1"
+dependencies = [
+ "base64",
+ "bytes",
+ "futures",
+ "mime",
+ "reqwest",
+ "robotstxt",
+ "serde",
+ "thiserror 2.0.18",
+ "tl",
+ "tokio",
+ "tracing",
+ "url",
 ]
 
 [[package]]

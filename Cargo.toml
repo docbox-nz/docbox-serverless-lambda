@@ -17,7 +17,8 @@ docbox-http = "0.9.2"
 docbox-core = "0.13.3"
 
 # Docbox management layer
-docbox-management = "0.12.2"
+docbox-management = "0.13.0"
+docbox-management-interface = "0.1.0"
 
 # Bytes type used for cheap shared bytes (and utilities)
 bytes = "=1.11.0"
@@ -42,4 +43,5 @@ serde_json = "=1.0.149"
 # [patch.crates-io]
 # docbox-http = { version = "0.9.1", path = "../docbox/packages/docbox-http" }
 # docbox-core = { version = "0.13.2", path = "../docbox/packages/docbox-core" }
-# docbox-management = { version = "0.12.2", path = "../docbox/packages/docbox-management" }
+# docbox-management = { version = "0.13.0", path = "../docbox/packages/docbox-management" }
+# docbox-management-interface = { version = "0.1.0", path = "../docbox/packages/docbox-management-interface" }
