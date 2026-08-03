@@ -1720,7 +1720,7 @@ dependencies = [
 
 [[package]]
 name = "docbox-cleanup-lambda"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "aws-config",
  "aws_lambda_events",
@@ -1880,7 +1880,7 @@ dependencies = [
 
 [[package]]
 name = "docbox-http-lambda"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "axum",
  "docbox-core 0.15.0",
@@ -1928,7 +1928,7 @@ dependencies = [
 
 [[package]]
 name = "docbox-management-lambda"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "docbox-management",
  "docbox-management-interface",
@@ -2104,7 +2104,7 @@ dependencies = [
 
 [[package]]
 name = "docbox-upload-completion-lambda"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "aws-config",
  "aws_lambda_events",
