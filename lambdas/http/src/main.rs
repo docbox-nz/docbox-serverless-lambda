@@ -36,7 +36,8 @@ async fn main() -> Result<(), Error> {
 
     let app = app().await?;
 
-    // Check if we are running in the restricted local environment
+    // Check if we are running in the restricted local environment where streaming responses
+    // are unavailable (floci)
     if std::env::var("LOCAL_DEVELOPMENT").is_ok_and(|value| value == "true") {
         lambda_http::run(app).await
     } else {
