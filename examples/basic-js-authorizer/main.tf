@@ -23,7 +23,7 @@ data "aws_caller_identity" "current" {}
 # Base docbox infra
 module "serverless_docbox" {
   source  = "docbox-nz/docbox-serverless-lambda/aws"
-  version = "0.0.6"
+  version = "0.0.7"
 
   aws_profile  = var.aws_profile
   aws_region   = var.aws_region
